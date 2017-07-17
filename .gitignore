@@ -1,0 +1,6 @@
+build-*
+*.kate-swp
+*.doxytag
+doc/html/
+*.user
+OpenSSL-Win32/
