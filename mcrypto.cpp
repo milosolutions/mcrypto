@@ -26,6 +26,7 @@ SOFTWARE.
 #include <QString>
 #include <QUuid>
 #include <QCryptographicHash>
+#include <QMetaEnum>
 
 
 /*!
@@ -35,15 +36,15 @@ SOFTWARE.
  *        To bypass this link statically OpenSSL.
  */
 
-Crypto::Crypto(const Crypto::AES encryption, const Crypto::MODE mode, QObject *parent)
-  : QObject(parent)
-  , encryption(aesToQAesEnc(encryption))
+MCrypto::MCrypto(const MCrypto::AES encryption, const MCrypto::MODE mode)
+  : encryption(aesToQAesEnc(encryption))
   , encryptionMode(modeToQAesMode(mode))
 {
-    salt = QString("d3aaa3a6b83786a20fcb6feda5b7c613b6421bb1b731a318903b95e18d6e6ecf").toLatin1();
+    // Salt mustn't be saved as plain string!
+    salt = QByteArray(MCrypto::staticMetaObject.className() + QByteArray("12") + QAESEncryption::staticMetaObject.className() + QByteArray::number(0x11abc126));
 
 #ifdef HAS_OPENSSL
-    algorithm = Crypto::getAlgorithmName(encryption, mode);
+    algorithm = QByteArray(QMetaEnum::fromType<MCrypto::AES>().valueToKey(int(encryption))).replace('_', '-') + QByteArray("-") + QByteArray(QMetaEnum::fromType<MCrypto::MODE>().valueToKey(int(mode)));
 #endif
 }
 
@@ -58,20 +59,21 @@ Crypto::Crypto(const Crypto::AES encryption, const Crypto::MODE mode, QObject *p
  * \return Encrypted data
  */
 
-QByteArray Crypto::encrypt(const Crypto::AES level, const Crypto::MODE mode, QByteArray &rawText, const QString &key, const QByteArray &iv)
+QByteArray MCrypto::encrypt(const MCrypto::AES level, const MCrypto::MODE mode, QByteArray &rawText, const QByteArray &key, const QByteArray &iv)
 {
 #ifdef HAS_OPENSSL
-    qDebug() << Q_FUNC_INFO << "OpenSSL";
+
+    qDebug() << "using OpenSSL |" << Q_FUNC_INFO;
     Q_UNUSED(iv);
-    return Crypto(level, mode).encrypt(rawText, key);
+    return MCrypto(level, mode).encrypt(rawText, key);
 
 #else
 
-    qDebug() << Q_FUNC_INFO << "Qt-AES";
-    QByteArray hashKey = QCryptographicHash::hash(key.toLocal8Bit(), QCryptographicHash::Sha256);
+    qDebug() << "using Qt-AES |" << Q_FUNC_INFO;
+    QByteArray hashKey = QCryptographicHash::hash(key, QCryptographicHash::Sha256);
     QByteArray hashIV = QCryptographicHash::hash(iv, QCryptographicHash::Md5);
 
-    return QAESEncryption::Crypt(Crypto::aesToQAesEnc(level), modeToQAesMode(mode), rawText, hashKey, hashIV);
+    return QAESEncryption::Crypt(MCrypto::aesToQAesEnc(level), modeToQAesMode(mode), rawText, hashKey, hashIV);
 
 #endif
 }
@@ -85,19 +87,22 @@ QByteArray Crypto::encrypt(const Crypto::AES level, const Crypto::MODE mode, QBy
  * \param iv default empty string
  * \return Decrypted data
  */
-QByteArray Crypto::decrypt(const Crypto::AES level, const Crypto::MODE mode, QByteArray &encryptedText, const QString &key, const QByteArray &iv)
+QByteArray MCrypto::decrypt(const MCrypto::AES level, const MCrypto::MODE mode, QByteArray &encryptedText, const QByteArray &key, const QByteArray &iv)
 {
 #ifdef HAS_OPENSSL
-    qDebug() << Q_FUNC_INFO << "OpenSSL";
+
+    qDebug() << "using OpenSSL |" << Q_FUNC_INFO;
     Q_UNUSED(iv);
-    return Crypto(level, mode).decrypt(encryptedText, key);
+    return MCrypto(level, mode).decrypt(encryptedText, key);
+
 #else
-    qDebug() << Q_FUNC_INFO << "Qt-AES";
-    QByteArray hashKey = QCryptographicHash::hash(key.toLocal8Bit(), QCryptographicHash::Sha256);
+
+    qDebug() << "using Qt-AES |" << Q_FUNC_INFO;
+    QByteArray hashKey = QCryptographicHash::hash(key, QCryptographicHash::Sha256);
     QByteArray hashIV = QCryptographicHash::hash(iv, QCryptographicHash::Md5);
 
     // converted to QString because QAesEncryption added null bytes at the end
-    return QString(QAESEncryption::Decrypt(Crypto::aesToQAesEnc(level), modeToQAesMode(mode), encryptedText, hashKey, hashIV)).toLocal8Bit();
+    return QString(QAESEncryption::Decrypt(MCrypto::aesToQAesEnc(level), modeToQAesMode(mode), encryptedText, hashKey, hashIV)).toLocal8Bit();
 
 #endif
 }
@@ -107,16 +112,16 @@ QByteArray Crypto::decrypt(const Crypto::AES level, const Crypto::MODE mode, QBy
  * \param level
  * \return Converted aes enum
  */
-QAESEncryption::AES Crypto::aesToQAesEnc(const Crypto::AES level)
+QAESEncryption::AES MCrypto::aesToQAesEnc(const MCrypto::AES level)
 {
   switch(level)
   {
-    case Crypto::AES_128:
+    case MCrypto::AES_128:
       return QAESEncryption::AES_128;
-    case Crypto::AES_192:
+    case MCrypto::AES_192:
       return QAESEncryption::AES_192;
     default:
-    case Crypto::AES_256:
+    case MCrypto::AES_256:
       return QAESEncryption::AES_256;
   }
 }
@@ -127,60 +132,18 @@ QAESEncryption::AES Crypto::aesToQAesEnc(const Crypto::AES level)
  * \return Converted mode enum
  */
 
-QAESEncryption::MODE Crypto::modeToQAesMode(const Crypto::MODE mode)
+QAESEncryption::MODE MCrypto::modeToQAesMode(const MCrypto::MODE mode)
 {
   switch(mode)
   {
     default:
-    case Crypto::CBC:
+    case MCrypto::CBC:
       return QAESEncryption::CBC;
-    case Crypto::CFB:
+    case MCrypto::CFB:
       return QAESEncryption::CFB;
-    case Crypto::ECB:
+    case MCrypto::ECB:
       return QAESEncryption::ECB;
   }
-}
-
-/*!
- * \brief Convert encryption level and mode enums to string
- * \param level
- * \param mode
- * \return Algorithm name string
- */
-
-QString Crypto::getAlgorithmName(const Crypto::AES level, const Crypto::MODE mode)
-{
-  QString name = QString();
-
-  switch(level)
-  {
-    case Crypto::AES_128:
-      name = "aes-128";
-      break;
-    case Crypto::AES_192:
-      name = "aes-192";
-      break;
-    case Crypto::AES_256:
-      name = "aes-256";
-      break;
-  }
-
-  switch(mode)
-  {
-    case Crypto::CBC:
-      name += "-cbc";
-      break;
-    case Crypto::CFB:
-      name += "-cfb";
-      break;
-    case Crypto::ECB:
-      name += "-ecb";
-      break;
-    default:
-      break;
-  }
-
-  return name;
 }
 
 /*!
@@ -189,7 +152,7 @@ QString Crypto::getAlgorithmName(const Crypto::AES level, const Crypto::MODE mod
  * \return true on success
  */
 
-bool Crypto::initEnc(const QString &pwd)
+bool MCrypto::initEnc(const QByteArray &pwd)
 {
 #ifdef HAS_OPENSSL
 
@@ -250,7 +213,7 @@ bool Crypto::initEnc(const QString &pwd)
  *      i.e. whole file
  */
 
-QByteArray Crypto::encrypt(QByteArray &inba, const QString &pwd)
+QByteArray MCrypto::encrypt(QByteArray &inba, const QByteArray &pwd)
 {
     QByteArray outbuf;
 
@@ -283,7 +246,7 @@ QByteArray Crypto::encrypt(QByteArray &inba, const QString &pwd)
     else
       qCritical() << "Unable to init encode crypt!";
 #else
-    QByteArray hashKey = QCryptographicHash::hash(pwd.toLocal8Bit(), QCryptographicHash::Sha256);
+    QByteArray hashKey = QCryptographicHash::hash(pwd, QCryptographicHash::Sha256);
     QByteArray hashIV = QCryptographicHash::hash(QByteArray(), QCryptographicHash::Md5);
 
     return QAESEncryption::Crypt(encryption, encryptionMode, inba, hashKey, hashIV);
@@ -298,7 +261,7 @@ QByteArray Crypto::encrypt(QByteArray &inba, const QString &pwd)
  * \return initialization status
  */
 
-bool Crypto::initDec(const QString &pwd)
+bool MCrypto::initDec(const QByteArray &pwd)
 {
 #ifdef HAS_OPENSSL
 
@@ -359,7 +322,7 @@ bool Crypto::initDec(const QString &pwd)
  *      i.e. whole file
  */
 
-QByteArray Crypto::decrypt(QByteArray &inba, const QString &pwd)
+QByteArray MCrypto::decrypt(QByteArray &inba, const QByteArray &pwd)
 {
 //    qDebug() << Q_FUNC_INFO << inba.size() << isEnd;
 
@@ -396,7 +359,7 @@ QByteArray Crypto::decrypt(QByteArray &inba, const QString &pwd)
     else
       qCritical() << "Unable to init decode crypt!";
 #else
-    QByteArray hashKey = QCryptographicHash::hash(pwd.toLocal8Bit(), QCryptographicHash::Sha256);
+    QByteArray hashKey = QCryptographicHash::hash(pwd, QCryptographicHash::Sha256);
     QByteArray hashIV = QCryptographicHash::hash(QByteArray(), QCryptographicHash::Md5);
 
     // converted to QString because QAesEncryption added null bytes at the end

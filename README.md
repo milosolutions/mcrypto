@@ -27,31 +27,33 @@ Cryptographic API for Qt applications. It allow to encode and decode AES 128, 19
 
 # Examples
 
+For security reasons remember to not save ***password***, ***IV*** or ***salt*** as plain string in source code! Examples show one way to save password without revealing it.
+
 ### Encoding
 
 	Crypto crypt(Crypto::AES_256, Crypto::CBC);
 	
-	QString pass("your-passphrase");
+	QByteArray password(SomeClass::staticMetaObject.className() + QByteArray("12") + SomeOtherClass::metaEnum + QByteArray::number(0x11abc126));
 	QByteArray rawData = ...;
 	
-	QByteArray encryptedData = crypt.encrypt(rawText, pass);
+	QByteArray encryptedData = crypt.encrypt(rawText, password);
 
 ### Decoding
 
 	Crypto crypt(Crypto::AES_256, Crypto::CBC);
 	
-	QString pass("your-passphrase");
+	QByteArray password(SomeClass::staticMetaObject.className() + QByteArray("12") + SomeOtherClass::metaEnum + QByteArray::number(0x11abc126));
 	QByteArray encryptedData = ...;
 	
-	QByteArray rawData = crypt.decrypt(encryptedData, pass);
+	QByteArray rawData = crypt.decrypt(encryptedData, password);
 
 ### Static calls
 
-    QString pass("your-passphrase");
+    QByteArray password(SomeClass::staticMetaObject.className() + QByteArray("12") + SomeOtherClass::metaEnum + QByteArray::number(0x11abc126));
     QByteArray rawData("The Advanced Encryption Standard (AES)");
     QByteArray iv("");
 
-  Crypto::encrypt(Crypto::AES_256, Crypto::CBC, rawData, pass, iv);
+  Crypto::encrypt(Crypto::AES_256, Crypto::CBC, rawData, password, iv);
   
 # Dependencies
 

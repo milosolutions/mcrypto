@@ -22,29 +22,32 @@ SOFTWARE.
 *******************************************************************************/
 
 #include <QDebug>
+#include <QLoggingCategory>
 
 #include "mcrypto.h"
 
-void test(QByteArray &rawData, const QString &pass)
-{
-  qDebug().nospace() << "\n" << Q_FUNC_INFO;
-  Crypto crypt(Crypto::AES_256, Crypto::CBC);
-  QByteArray encryptedData = crypt.encrypt(rawData, pass);
-  qDebug() << "Encryption result:" << encryptedData;
+Q_LOGGING_CATEGORY(coreMain, "core.main")
 
-  Crypto crypt2(Crypto::AES_256, Crypto::CBC);
+void test(QByteArray &rawData, const QByteArray &pass)
+{
+  qCDebug(coreMain) << Q_FUNC_INFO;
+  MCrypto crypt(MCrypto::AES_256, MCrypto::CBC);
+  QByteArray encryptedData = crypt.encrypt(rawData, pass);
+  qCDebug(coreMain) << "Encryption result:" << encryptedData;
+
+  MCrypto crypt2(MCrypto::AES_256, MCrypto::CBC);
   QByteArray decryptedData = crypt2.decrypt(encryptedData, pass);
-  qDebug() << "Decryption result:" << decryptedData;
+  qCDebug(coreMain) << "Decryption result:" << decryptedData;
 }
 
-void testStatic(QByteArray &rawData, const QString &pass)
+void testStatic(QByteArray &rawData, const QByteArray &pass)
 {
-  qDebug().nospace() << "\n" << Q_FUNC_INFO;
-  QByteArray encryptedData = Crypto::encrypt(Crypto::AES_256, Crypto::CBC, rawData, pass);
-  qDebug() << "Encryption result:" << encryptedData;
+  qCDebug(coreMain) << Q_FUNC_INFO;
+  QByteArray encryptedData = MCrypto::encrypt(MCrypto::AES_256, MCrypto::CBC, rawData, pass);
+  qCDebug(coreMain) << "Encryption result:" << encryptedData;
 
-  QByteArray decryptedData = Crypto::decrypt(Crypto::AES_256, Crypto::CBC, encryptedData, pass);
-  qDebug() << "Decryption result:" << decryptedData;
+  QByteArray decryptedData = MCrypto::decrypt(MCrypto::AES_256, MCrypto::CBC, encryptedData, pass);
+  qCDebug(coreMain) << "Decryption result:" << decryptedData;
 }
 
 
@@ -53,7 +56,7 @@ int main(int argc, char *argv[])
   Q_UNUSED(argc);
   Q_UNUSED(argv);
 
-  QString pass = "password";
+  QByteArray pass = "password";
   QByteArray rawData = "The Advanced Encryption Standard (AES)";
 
   test(rawData, pass);

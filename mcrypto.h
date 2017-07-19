@@ -34,54 +34,50 @@ SOFTWARE.
 
 #include "qaesencryption.h"
 
-class Crypto : public QObject
+class MCrypto
 {
-    Q_OBJECT
+    Q_GADGET
 public:
-    typedef enum {
+    enum AES {
         AES_128,
         AES_192,
         AES_256
-    } AES;
+    };
+    Q_ENUM(AES)
 
-    typedef enum {
+    typedef enum MODE {
         ECB,
         CBC,
         CFB
     } MODE;
+    Q_ENUM(MODE)
 
-    explicit Crypto(const Crypto::AES encryption = Crypto::AES_256, const Crypto::MODE mode = Crypto::CBC, QObject *parent = 0);
+    explicit MCrypto(const MCrypto::AES encryption = MCrypto::AES_256, const MCrypto::MODE mode = MCrypto::CBC);
 
-    static QByteArray encrypt(const Crypto::AES level, const Crypto::MODE mode, QByteArray &rawText, const QString &key, const QByteArray &iv = QByteArray());
-    static QByteArray decrypt(const Crypto::AES level, const Crypto::MODE mode, QByteArray &encryptedText, const QString &key, const QByteArray &iv = QByteArray());
+    Q_INVOKABLE static QByteArray encrypt(const MCrypto::AES level, const MCrypto::MODE mode, QByteArray &rawText, const QByteArray &key, const QByteArray &iv = QByteArray());
+    Q_INVOKABLE static QByteArray decrypt(const MCrypto::AES level, const MCrypto::MODE mode, QByteArray &encryptedText, const QByteArray &key, const QByteArray &iv = QByteArray());
 
-    QByteArray encrypt(QByteArray &inba, const QString &pwd);
-    QByteArray decrypt(QByteArray &inba, const QString &pwd);
+    Q_INVOKABLE QByteArray encrypt(QByteArray &inba, const QByteArray &pwd);
+    Q_INVOKABLE QByteArray decrypt(QByteArray &inba, const QByteArray &pwd);
 
 private:
-    bool initEnc(const QString &pwd);
-    bool initDec(const QString &pwd);
+    bool initEnc(const QByteArray &pwd);
+    bool initDec(const QByteArray &pwd);
 
-    static QString getAlgorithmName(const Crypto::AES level,const  Crypto::MODE mode);
-    static QAESEncryption::AES aesToQAesEnc(const Crypto::AES level);
-    static QAESEncryption::MODE modeToQAesMode(const Crypto::MODE level);
+    static QAESEncryption::AES aesToQAesEnc(const MCrypto::AES level);
+    static QAESEncryption::MODE modeToQAesMode(const MCrypto::MODE level);
 
 #ifdef HAS_OPENSSL
     EVP_CIPHER_CTX e_ctx;
     EVP_CIPHER_CTX d_ctx;
     QByteArray key;
     QByteArray iv;
-    QString algorithm;
+    QByteArray algorithm;
 #endif
     QAESEncryption::AES encryption;
     QAESEncryption::MODE encryptionMode;
 
     QByteArray salt;
-    
-signals:
-    
-public slots:
-    
 };
 
 #endif // ENCRYPTION_H
