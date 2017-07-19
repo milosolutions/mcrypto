@@ -1,23 +1,33 @@
+isEmpty(OPENSSL_PATH) {
+  win32:OPENSSL_PATH=$$PWD/OpenSSL-Win32
+  unix:OPENSSL_PATH=/usr/include/openssl
+  android:OPENSSL_PATH=$$PWD/OpenSSL-for-Android-Prebuilt
+}
+
+isEmpty(OPENSSL_INCLUDE) {
+  unix:OPENSSL_INCLUDE=/usr/include/openssl
+}
+
 win32 {
-    exists($$PWD/OpenSSL-Win32/include/*) {
-        LIBS += -L$$PWD/OpenSSL-Win32/lib -lssleay32 -llibeay32
-        INCLUDEPATH += $$PWD/OpenSSL-Win32/include
+    exists($$OPENSSL_PATH/include/*) {
+        LIBS += -L$$OPENSSL_PATH/lib -lssleay32 -llibeay32
+        INCLUDEPATH += $$OPENSSL_PATH/include
         DEFINES += OPENSSL_INCLUDED
     }
 }
 unix {
-    exists(/usr/include/openssl/*) {
+    exists($$OPENSSL_PATH/*) {
         LIBS += -lssl -lcrypto
-        INCLUDEPATH += /usr/include/openssl
+        INCLUDEPATH += $$OPENSSL_INCLUDE
         DEFINES += OPENSSL_INCLUDED
     }
 }
 android {
-  exists($$PWD/OpenSSL-for-Android-Prebuilt/include/*) {
-    INCLUDEPATH += $$PWD/OpenSSL-for-Android-Prebuilt/include
-    LIBS += -L$$PWD/OpenSSL-for-Android-Prebuilt/armeabi-v7a/lib -lssl -lcrypto
-    DEFINES += OPENSSL_INCLUDED
-  }
+    exists($$OPENSSL_PATH/include/*) {
+        INCLUDEPATH += $$OPENSSL_PATH/include
+        LIBS += -L$$OPENSSL_PATH/armeabi-v7a/lib -lssl -lcrypto
+        DEFINES += OPENSSL_INCLUDED
+    }
 }
 
 INCLUDEPATH += $$PWD

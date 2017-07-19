@@ -15,6 +15,11 @@ Cryptographic API for Qt applications. It allow to encode and decode AES 128, 19
 
 ## Including OpenSSL
 
+### Defines
+
+* OPENSSL_PATH - custom OpenSSL path
+* OPENSSL_INCLUDE - custom OpenSSL include path
+
 ### Windows
 
 1. Download version below 1.1.0 [OpenSSL download] (https://slproweb.com/products/Win32OpenSSL.html). 

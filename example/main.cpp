@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
   Q_UNUSED(argc);
   Q_UNUSED(argv);
 
-  QByteArray pass = "password";
+  QByteArray pass = "Don't store password as plain string!";
   QByteArray rawData = "The Advanced Encryption Standard (AES)";
 
   test(rawData, pass);
