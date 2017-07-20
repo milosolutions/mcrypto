@@ -37,3 +37,5 @@ SOURCES += $$PWD\mcrypto.cpp \
 
 HEADERS += $$PWD\mcrypto.h \
     $$PWD\qaesencryption.h
+	
+DEFINES += MCRYPT_LIB

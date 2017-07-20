@@ -63,13 +63,13 @@ QByteArray MCrypto::encrypt(const MCrypto::AES level, const MCrypto::MODE mode, 
 {
 #ifdef HAS_OPENSSL
 
-    qDebug() << "using OpenSSL |" << Q_FUNC_INFO;
+//    qDebug() << "using OpenSSL |" << Q_FUNC_INFO;
     Q_UNUSED(iv);
     return MCrypto(level, mode).encrypt(rawText, key);
 
 #else
 
-    qDebug() << "using Qt-AES |" << Q_FUNC_INFO;
+//    qDebug() << "using Qt-AES |" << Q_FUNC_INFO;
     QByteArray hashKey = QCryptographicHash::hash(key, QCryptographicHash::Sha256);
     QByteArray hashIV = QCryptographicHash::hash(iv, QCryptographicHash::Md5);
 
@@ -91,13 +91,13 @@ QByteArray MCrypto::decrypt(const MCrypto::AES level, const MCrypto::MODE mode, 
 {
 #ifdef HAS_OPENSSL
 
-    qDebug() << "using OpenSSL |" << Q_FUNC_INFO;
+//    qDebug() << "using OpenSSL |" << Q_FUNC_INFO;
     Q_UNUSED(iv);
     return MCrypto(level, mode).decrypt(encryptedText, key);
 
 #else
 
-    qDebug() << "using Qt-AES |" << Q_FUNC_INFO;
+//    qDebug() << "using Qt-AES |" << Q_FUNC_INFO;
     QByteArray hashKey = QCryptographicHash::hash(key, QCryptographicHash::Sha256);
     QByteArray hashIV = QCryptographicHash::hash(iv, QCryptographicHash::Md5);
 
@@ -324,8 +324,6 @@ bool MCrypto::initDec(const QByteArray &pwd)
 
 QByteArray MCrypto::decrypt(QByteArray &inba, const QByteArray &pwd)
 {
-//    qDebug() << Q_FUNC_INFO << inba.size() << isEnd;
-
     QByteArray outbuf;
 
 #ifdef HAS_OPENSSL
