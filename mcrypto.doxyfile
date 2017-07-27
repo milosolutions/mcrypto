@@ -15,6 +15,8 @@ OUTPUT_DIRECTORY = doc/
 INPUT = mcrypto.h mcrypto.cpp qaesencryption.h qaesencryption.cpp README.md AUTHORS.md example/
 #EXCLUDE_PATTERNS = */something/*
 USE_MDFILE_AS_MAINPAGE = README.md
+MARKDOWN_SUPPORT = YES
+TOC_INCLUDE_HEADINGS = 99
 
 RECURSIVE = TRUE
 QT_AUTOBRIEF = YES

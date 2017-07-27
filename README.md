@@ -1,11 +1,10 @@
-\anchor MCrypto
 [TOC]
 
 Milo Code DB main ([online](https://qtdocs.milosolutions.com/milo-code-db/main/) | [offline](\ref milodatabasemain))
 
 # Description
 
-Cryptographic API for Qt applications. It allow to encode and decode AES 128, 192, 256 in CBC, ECB or CFB modes. It is using OpenSSL libraries or included Qt-AES.
+Cryptographic API for Qt applications. It allow to encode and decode AES 128, 192, 256 in CBC, ECB or CFB modes. If OpenSSL isn't included, [Qt-AES](https://github.com/bricke/Qt-AES) will be used.
 
 # Building
 
@@ -17,8 +16,10 @@ Cryptographic API for Qt applications. It allow to encode and decode AES 128, 19
 
 ### Defines
 
-* OPENSSL_PATH - custom OpenSSL path
-* OPENSSL_INCLUDE - custom OpenSSL include path
+```
+OPENSSL_PATH - custom OpenSSL path
+OPENSSL_INCLUDE - custom OpenSSL include path
+```
 
 ### Windows
 
@@ -28,7 +29,9 @@ Cryptographic API for Qt applications. It allow to encode and decode AES 128, 19
 
 ### Linux
 
-1. sudo apt-get install libssl-dev
+```
+sudo apt-get install libssl-dev
+```
 
 ### Android
 
@@ -39,7 +42,7 @@ Cryptographic API for Qt applications. It allow to encode and decode AES 128, 19
 
 For security reasons remember to not save ***password***, ***IV*** or ***salt*** as plain string in source code! Examples show one way to save password without revealing it.
 
-### Encoding
+## Encoding
 
 	Crypto crypt(Crypto::AES_256, Crypto::CBC);
 	
@@ -48,7 +51,7 @@ For security reasons remember to not save ***password***, ***IV*** or ***salt***
 	
 	QByteArray encryptedData = crypt.encrypt(rawText, password);
 
-### Decoding
+## Decoding
 
 	Crypto crypt(Crypto::AES_256, Crypto::CBC);
 	
@@ -57,13 +60,13 @@ For security reasons remember to not save ***password***, ***IV*** or ***salt***
 	
 	QByteArray rawData = crypt.decrypt(encryptedData, password);
 
-### Static calls
+## Static calls
 
     QByteArray password(SomeClass::staticMetaObject.className() + QByteArray("12") + SomeOtherClass::metaEnum + QByteArray::number(0x11abc126));
     QByteArray rawData("The Advanced Encryption Standard (AES)");
     QByteArray iv("");
 
-  Crypto::encrypt(Crypto::AES_256, Crypto::CBC, rawData, password, iv);
+	Crypto::encrypt(Crypto::AES_256, Crypto::CBC, rawData, password, iv);
   
 # Dependencies
 
