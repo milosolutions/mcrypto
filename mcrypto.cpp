@@ -59,10 +59,9 @@ MCrypto::MCrypto(const MCrypto::AES encryption, const MCrypto::MODE mode)
  * \return Encrypted data
  */
 
-QByteArray MCrypto::encrypt(const MCrypto::AES level, const MCrypto::MODE mode, QByteArray &rawText, const QByteArray &key, const QByteArray &iv)
+QByteArray MCrypto::encrypt(const MCrypto::AES level, const MCrypto::MODE mode, const QByteArray &rawText, const QByteArray &key, const QByteArray &iv)
 {
 #ifdef HAS_OPENSSL
-
 //    qDebug() << "using OpenSSL |" << Q_FUNC_INFO;
     Q_UNUSED(iv);
     return MCrypto(level, mode).encrypt(rawText, key);
@@ -87,10 +86,9 @@ QByteArray MCrypto::encrypt(const MCrypto::AES level, const MCrypto::MODE mode, 
  * \param iv default empty string
  * \return Decrypted data
  */
-QByteArray MCrypto::decrypt(const MCrypto::AES level, const MCrypto::MODE mode, QByteArray &encryptedText, const QByteArray &key, const QByteArray &iv)
+QByteArray MCrypto::decrypt(const MCrypto::AES level, const MCrypto::MODE mode, const QByteArray &encryptedText, const QByteArray &key, const QByteArray &iv)
 {
 #ifdef HAS_OPENSSL
-
 //    qDebug() << "using OpenSSL |" << Q_FUNC_INFO;
     Q_UNUSED(iv);
     return MCrypto(level, mode).decrypt(encryptedText, key);
@@ -155,7 +153,6 @@ QAESEncryption::MODE MCrypto::modeToQAesMode(const MCrypto::MODE mode)
 bool MCrypto::initEnc(const QByteArray &pwd)
 {
 #ifdef HAS_OPENSSL
-
     key.clear();
     iv.clear();
     key.resize(EVP_MAX_KEY_LENGTH);
@@ -202,7 +199,6 @@ bool MCrypto::initEnc(const QByteArray &pwd)
     Q_UNUSED (pwd)
     return false;
 #endif
-
 }
 
 /*!
@@ -213,7 +209,7 @@ bool MCrypto::initEnc(const QByteArray &pwd)
  *      i.e. whole file
  */
 
-QByteArray MCrypto::encrypt(QByteArray &inba, const QByteArray &pwd)
+QByteArray MCrypto::encrypt(const QByteArray &inba, const QByteArray &pwd)
 {
     QByteArray outbuf;
 
@@ -264,7 +260,6 @@ QByteArray MCrypto::encrypt(QByteArray &inba, const QByteArray &pwd)
 bool MCrypto::initDec(const QByteArray &pwd)
 {
 #ifdef HAS_OPENSSL
-
     key.clear();
     iv.clear();
 
@@ -311,7 +306,6 @@ bool MCrypto::initDec(const QByteArray &pwd)
     Q_UNUSED (pwd)
     return false;
 #endif
-
 }
 
 /*!
@@ -322,7 +316,7 @@ bool MCrypto::initDec(const QByteArray &pwd)
  *      i.e. whole file
  */
 
-QByteArray MCrypto::decrypt(QByteArray &inba, const QByteArray &pwd)
+QByteArray MCrypto::decrypt(const QByteArray &inba, const QByteArray &pwd)
 {
     QByteArray outbuf;
 

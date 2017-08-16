@@ -8,9 +8,11 @@ Cryptographic API for Qt applications. It allow to encode and decode AES 128, 19
 
 # Building
 
-1. Include crypto.pri to your .pro file.
-2. If OpenSSL not included included Qt-AES will be used
-3. Enjoy.
+1. Include mcrypto.pri to your .pro file.
+2. If OpenSSL is not included Qt-AES will be used
+3. You can use CONFIG += openssl / no-openssl to force either setting.
+4. Enjoy.
+5. If something does not work, see the mcrypto.pri - perhaps the paths are wrong?
 
 ## Including OpenSSL
 
@@ -30,13 +32,18 @@ OPENSSL_INCLUDE - custom OpenSSL include path
 ### Linux
 
 ```
-sudo apt-get install libssl-dev
+sudo apt install libssl-dev
 ```
+
+Or, use custom build script from mcrypto/scripts/prepare_openssl_linux.sh directory and update paths in mcrypto.pri.
 
 ### Android
 
-1. Prepare OpenSSL for Android: [Qt OpenSSL support] (http://doc.qt.io/qt-5/opensslsupport.html)
-2. Update path for android libraries in mcrypto.pri
+1. Prepare mcrypto/scripts/setenv-android.sh (copy the example, fill in correct data).
+2. Run ```./prepare_openssl_android.sh```
+2. Check paths for Android libraries in mcrypto.pri. They should be OK by default.
+
+[Further reading] (http://doc.qt.io/qt-5/opensslsupport.html)
 
 # Examples
 

@@ -1,0 +1,112 @@
+#!/bin/bash
+
+ANDROID_NDK_ROOT=/home/tools/android-ndk
+ANDROID_EABI=arm-linux-androideabi-4.9
+ANDROID_ARCH=arch-arm # might be arch-x86 too
+ANDROID_API=android-19
+HOST=linux-x86_64
+
+# Error checking
+# ANDROID_NDK_ROOT should always be set by the user (even when not running this script)
+# http://groups.google.com/group/android-ndk/browse_thread/thread/a998e139aca71d77
+if [ -z "$ANDROID_NDK_ROOT" ] || [ ! -d "$ANDROID_NDK_ROOT" ]; then
+  echo "Error: ANDROID_NDK_ROOT is not a valid path. Please edit this script."
+  exit 1
+fi
+
+# Error checking
+if [ ! -d "$ANDROID_NDK_ROOT/toolchains" ]; then
+  echo "Error: ANDROID_NDK_ROOT/toolchains is not a valid path. Please edit this script."
+  exit 1
+fi
+
+# Error checking
+if [ ! -d "$ANDROID_NDK_ROOT/toolchains/$ANDROID_EABI" ]; then
+  echo "Error: ANDROID_EABI is not a valid path. Please edit this script."
+  exit 1
+fi
+
+#####################################################################
+
+ANDROID_TOOLCHAIN="$ANDROID_NDK_ROOT/toolchains/$ANDROID_EABI/prebuilt/$HOST/bin"
+
+# Error checking
+if [ -z "$ANDROID_TOOLCHAIN" ] || [ ! -d "$ANDROID_TOOLCHAIN" ]; then
+  echo "Error: ANDROID_TOOLCHAIN is not valid. Please edit this script."
+  exit 1
+fi
+
+case $ANDROID_ARCH in
+	arch-arm)
+      ANDROID_TOOLS="arm-linux-androideabi-gcc arm-linux-androideabi-ranlib arm-linux-androideabi-ld"
+	  ;;
+	arch-x86)
+      ANDROID_TOOLS="i686-linux-android-gcc i686-linux-android-ranlib i686-linux-android-ld"
+	  ;;
+	*)
+	  echo "ERROR ERROR ERROR"
+    exit 1
+	  ;;
+esac
+
+for tool in $ANDROID_TOOLS
+do
+  # Error checking
+  if [ ! -e "$ANDROID_TOOLCHAIN/$tool" ]; then
+    echo "Error: Failed to find $tool. Please edit this script."
+    exit 1
+  fi
+done
+
+# Only modify/export PATH if ANDROID_TOOLCHAIN good
+if [ ! -z "$ANDROID_TOOLCHAIN" ]; then
+  export ANDROID_TOOLCHAIN="$ANDROID_TOOLCHAIN"
+  export PATH="$ANDROID_TOOLCHAIN":"$PATH"
+fi
+
+#####################################################################
+
+export ANDROID_SYSROOT="$ANDROID_NDK_ROOT/platforms/$ANDROID_API/$ANDROID_ARCH"
+export CROSS_SYSROOT="$ANDROID_SYSROOT"
+export NDK_SYSROOT="$ANDROID_SYSROOT"
+
+# Error checking
+if [ -z "$ANDROID_SYSROOT" ] || [ ! -d "$ANDROID_SYSROOT" ]; then
+  echo "Error: ANDROID_SYSROOT is not valid. Please edit this script."
+fi
+
+#####################################################################
+
+export MACHINE=armv7
+export RELEASE=2.6.37
+export SYSTEM=android
+export ARCH=arm
+export CROSS_COMPILE="arm-linux-androideabi-"
+
+if [ "$ANDROID_ARCH" == "arch-x86" ]; then
+	export MACHINE=i686
+	export RELEASE=2.6.37
+	export SYSTEM=android
+	export ARCH=x86
+	export CROSS_COMPILE="i686-linux-android-"
+fi
+
+export ANDROID_SYSROOT="$ANDROID_NDK_ROOT/platforms/$ANDROID_API/$ANDROID_ARCH"
+export SYSROOT="$ANDROID_SYSROOT"
+export NDK_SYSROOT="$ANDROID_SYSROOT"
+export ANDROID_NDK_SYSROOT="$ANDROID_SYSROOT"
+export ANDROID_API="$ANDROID_API"
+export ANDROID_DEV="$ANDROID_NDK_ROOT/platforms/$ANDROID_API/$ANDROID_ARCH/usr"
+export HOSTCC=gcc
+
+VERBOSE=1
+if [ ! -z "$VERBOSE" ] && [ "$VERBOSE" != "0" ]; then
+  echo "ANDROID_NDK_ROOT: $ANDROID_NDK_ROOT"
+  echo "ANDROID_ARCH: $ANDROID_ARCH"
+  echo "ANDROID_EABI: $ANDROID_EABI"
+  echo "ANDROID_API: $ANDROID_API"
+  echo "ANDROID_SYSROOT: $ANDROID_SYSROOT"
+  echo "ANDROID_TOOLCHAIN: $ANDROID_TOOLCHAIN"
+  echo "CROSS_COMPILE: $CROSS_COMPILE"
+  echo "ANDROID_DEV: $ANDROID_DEV"
+fi
