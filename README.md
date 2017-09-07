@@ -2,6 +2,8 @@
 
 Milo Code DB main ([online](https://docs.milosolutions.com/milo-code-db/main/) | [offline](\ref milodatabasemain))
 
+[Source code](https://github.com/milosolutions/mcrypto)
+
 # Description
 
 Cryptographic API for Qt applications. It allow to encode and decode AES 128, 192, 256 in CBC, ECB or CFB modes. If OpenSSL isn't included, [Qt-AES](https://github.com/bricke/Qt-AES) will be used.
