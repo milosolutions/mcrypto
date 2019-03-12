@@ -68,8 +68,8 @@ private:
     static QAESEncryption::MODE modeToQAesMode(const MCrypto::MODE level);
 
 #ifdef HAS_OPENSSL
-    EVP_CIPHER_CTX e_ctx;
-    EVP_CIPHER_CTX d_ctx;
+    EVP_CIPHER_CTX *e_ctx;
+    EVP_CIPHER_CTX *d_ctx;
     QByteArray key;
     QByteArray iv;
     QByteArray algorithm;

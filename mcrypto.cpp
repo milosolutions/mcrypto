@@ -99,7 +99,7 @@ QByteArray MCrypto::decrypt(const MCrypto::AES level, const MCrypto::MODE mode, 
     QByteArray hashKey = QCryptographicHash::hash(key, QCryptographicHash::Sha256);
     QByteArray hashIV = QCryptographicHash::hash(iv, QCryptographicHash::Md5);
 
-    // converted to QString because QAesEncryption added null bytes at the end
+    // converted to QString because QAesEncryption added nullptr bytes at the end
     return QString(QAESEncryption::Decrypt(MCrypto::aesToQAesEnc(level), modeToQAesMode(mode), encryptedText, hashKey, hashIV)).toLocal8Bit();
 
 #endif
@@ -161,11 +161,13 @@ bool MCrypto::initEnc(const QByteArray &pwd)
     OpenSSL_add_all_ciphers();
     OpenSSL_add_all_digests();
 
-    EVP_CIPHER_CTX_init(&e_ctx);
+    e_ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER_CTX_init(e_ctx);
 
     const EVP_CIPHER *cipher = EVP_get_cipherbyname(qPrintable(algorithm));
     if (!cipher) {
-        EVP_CIPHER_CTX_cleanup(&e_ctx);
+        EVP_CIPHER_CTX_cleanup(e_ctx);
+        EVP_CIPHER_CTX_free(e_ctx);
         EVP_cleanup();
         return false;
     }
@@ -173,7 +175,8 @@ bool MCrypto::initEnc(const QByteArray &pwd)
     const EVP_MD *dgst = EVP_get_digestbyname(qPrintable("md5"));
 
     if (!dgst) {
-        EVP_CIPHER_CTX_cleanup(&e_ctx);
+        EVP_CIPHER_CTX_cleanup(e_ctx);
+        EVP_CIPHER_CTX_free(e_ctx);
         EVP_cleanup();
         return false;
     }
@@ -188,7 +191,7 @@ bool MCrypto::initEnc(const QByteArray &pwd)
     if (key.isEmpty() || iv.isEmpty())
         return false;
 
-    if (!EVP_EncryptInit_ex(&e_ctx, cipher, NULL,
+    if (!EVP_EncryptInit_ex(e_ctx, cipher, nullptr,
                             (const unsigned char*)key.constData(),
                             (const unsigned char*)iv.constData()))
         return false;
@@ -221,21 +224,22 @@ QByteArray MCrypto::encrypt(const QByteArray &inba, const QByteArray &pwd)
 
         outbuf = QByteArray(inlen + EVP_MAX_BLOCK_LENGTH, 0);
 
-        if (!EVP_EncryptUpdate(&e_ctx, (unsigned char*)outbuf.data(), &outlen,
+        if (!EVP_EncryptUpdate(e_ctx, (unsigned char*)outbuf.data(), &outlen,
                                (const unsigned char*)inba.constData(), inlen)) {
             return QByteArray();
         }
 
         int tmplen = 0;
 
-        if (!EVP_EncryptFinal_ex(&e_ctx,
+        if (!EVP_EncryptFinal_ex(e_ctx,
                                  ((unsigned char*)outbuf.data()) + outlen, &tmplen)) {
             return QByteArray();
         }
 
         outlen += tmplen;
 
-        EVP_CIPHER_CTX_cleanup(&e_ctx);
+        EVP_CIPHER_CTX_cleanup(e_ctx);
+        EVP_CIPHER_CTX_free(e_ctx);
         EVP_cleanup();
         outbuf.resize(outlen);
     }
@@ -269,11 +273,13 @@ bool MCrypto::initDec(const QByteArray &pwd)
     OpenSSL_add_all_ciphers();
     OpenSSL_add_all_digests();
 
-    EVP_CIPHER_CTX_init(&d_ctx);
+    d_ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER_CTX_init(d_ctx);
 
     const EVP_CIPHER *decipher = EVP_get_cipherbyname(qPrintable(algorithm));
     if (!decipher) {
-        EVP_CIPHER_CTX_cleanup(&d_ctx);
+        EVP_CIPHER_CTX_cleanup(d_ctx);
+        EVP_CIPHER_CTX_free(d_ctx);
         EVP_cleanup();
         return false;
     }
@@ -281,7 +287,8 @@ bool MCrypto::initDec(const QByteArray &pwd)
     const EVP_MD *dgst = EVP_get_digestbyname(qPrintable("md5"));
 
     if (!dgst) {
-        EVP_CIPHER_CTX_cleanup(&d_ctx);
+        EVP_CIPHER_CTX_cleanup(d_ctx);
+        EVP_CIPHER_CTX_free(d_ctx);
         EVP_cleanup();
         return false;
     }
@@ -296,7 +303,7 @@ bool MCrypto::initDec(const QByteArray &pwd)
     if (key.isEmpty() || iv.isEmpty())
         return false;
 
-    if (!EVP_DecryptInit_ex(&d_ctx, decipher, NULL,
+    if (!EVP_DecryptInit_ex(d_ctx, decipher, nullptr,
                             (const unsigned char*)key.constData(),
                             (const unsigned char*)iv.constData()))
         return false;
@@ -328,14 +335,14 @@ QByteArray MCrypto::decrypt(const QByteArray &inba, const QByteArray &pwd)
 
         outbuf = QByteArray(inlen + EVP_MAX_BLOCK_LENGTH, 0);
 
-        if (!EVP_DecryptUpdate(&d_ctx, (unsigned char*)outbuf.data(), &outlen,
+        if (!EVP_DecryptUpdate(d_ctx, (unsigned char*)outbuf.data(), &outlen,
                                (const unsigned char*)inba.constData(), inlen)) {
             return QByteArray();
         }
 
         int tmplen = 0;
 
-        if (!EVP_DecryptFinal_ex(&d_ctx,
+        if (!EVP_DecryptFinal_ex(d_ctx,
                                  ((unsigned char*)outbuf.data()) + outlen, &tmplen)) {
             qDebug() << "--- !EVP_EncryptFinal_ex";
             return QByteArray();
@@ -343,7 +350,8 @@ QByteArray MCrypto::decrypt(const QByteArray &inba, const QByteArray &pwd)
 
         outlen += tmplen;
 
-        EVP_CIPHER_CTX_cleanup(&d_ctx);
+        EVP_CIPHER_CTX_cleanup(d_ctx);
+        EVP_CIPHER_CTX_free(d_ctx);
         EVP_cleanup();
 
         outbuf.resize(outlen);
@@ -354,7 +362,7 @@ QByteArray MCrypto::decrypt(const QByteArray &inba, const QByteArray &pwd)
     QByteArray hashKey = QCryptographicHash::hash(pwd, QCryptographicHash::Sha256);
     QByteArray hashIV = QCryptographicHash::hash(QByteArray(), QCryptographicHash::Md5);
 
-    // converted to QString because QAesEncryption added null bytes at the end
+    // converted to QString because QAesEncryption added nullptr bytes at the end
     return QString(QAESEncryption::Decrypt(encryption, encryptionMode, inba, hashKey, hashIV)).toLocal8Bit();
 #endif
 
