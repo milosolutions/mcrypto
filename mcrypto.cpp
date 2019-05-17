@@ -37,14 +37,18 @@ SOFTWARE.
  */
 
 MCrypto::MCrypto(const MCrypto::AES encryption, const MCrypto::MODE mode)
-  : encryption(aesToQAesEnc(encryption))
-  , encryptionMode(modeToQAesMode(mode))
+  : m_encryption(aesToQAesEnc(encryption)), m_encryptionMode(modeToQAesMode(mode)),
+      // Salt mustn't be saved as plain string!
+      m_salt(QByteArray(MCrypto::staticMetaObject.className()
+                        + QByteArray("12")
+                        + QAESEncryption::staticMetaObject.className()
+                        + QByteArray::number(0x11abc126)))
 {
-    // Salt mustn't be saved as plain string!
-    salt = QByteArray(MCrypto::staticMetaObject.className() + QByteArray("12") + QAESEncryption::staticMetaObject.className() + QByteArray::number(0x11abc126));
-
 #ifdef HAS_OPENSSL
-    algorithm = QByteArray(QMetaEnum::fromType<MCrypto::AES>().valueToKey(int(encryption))).replace('_', '-') + QByteArray("-") + QByteArray(QMetaEnum::fromType<MCrypto::MODE>().valueToKey(int(mode)));
+    m_algorithm = QByteArray(QMetaEnum::fromType<MCrypto::AES>()
+                                 .valueToKey(int(encryption))).replace('_', '-')
+        + QByteArray("-")
+        + QByteArray(QMetaEnum::fromType<MCrypto::MODE>().valueToKey(int(mode)));
 #endif
 }
 
@@ -65,14 +69,13 @@ QByteArray MCrypto::encrypt(const MCrypto::AES level, const MCrypto::MODE mode, 
 //    qDebug() << "using OpenSSL |" << Q_FUNC_INFO;
     Q_UNUSED(iv);
     return MCrypto(level, mode).encrypt(rawText, key);
-
-#else
-
+#else    
 //    qDebug() << "using Qt-AES |" << Q_FUNC_INFO;
     QByteArray hashKey = QCryptographicHash::hash(key, QCryptographicHash::Sha256);
     QByteArray hashIV = QCryptographicHash::hash(iv, QCryptographicHash::Md5);
 
-    return QAESEncryption::Crypt(MCrypto::aesToQAesEnc(level), modeToQAesMode(mode), rawText, hashKey, hashIV);
+    return QAESEncryption::Crypt(MCrypto::aesToQAesEnc(level),
+                                 modeToQAesMode(mode), rawText, hashKey, hashIV);
 
 #endif
 }
@@ -86,21 +89,23 @@ QByteArray MCrypto::encrypt(const MCrypto::AES level, const MCrypto::MODE mode, 
  * \param iv default empty string
  * \return Decrypted data
  */
-QByteArray MCrypto::decrypt(const MCrypto::AES level, const MCrypto::MODE mode, const QByteArray &encryptedText, const QByteArray &key, const QByteArray &iv)
+QByteArray MCrypto::decrypt(const MCrypto::AES level, const MCrypto::MODE mode,
+                            const QByteArray &encryptedText, const QByteArray &key,
+                            const QByteArray &iv)
 {
 #ifdef HAS_OPENSSL
 //    qDebug() << "using OpenSSL |" << Q_FUNC_INFO;
     Q_UNUSED(iv);
     return MCrypto(level, mode).decrypt(encryptedText, key);
-
-#else
-
+#else    
 //    qDebug() << "using Qt-AES |" << Q_FUNC_INFO;
     QByteArray hashKey = QCryptographicHash::hash(key, QCryptographicHash::Sha256);
     QByteArray hashIV = QCryptographicHash::hash(iv, QCryptographicHash::Md5);
 
     // converted to QString because QAesEncryption added nullptr bytes at the end
-    return QString(QAESEncryption::Decrypt(MCrypto::aesToQAesEnc(level), modeToQAesMode(mode), encryptedText, hashKey, hashIV)).toLocal8Bit();
+    return QString(QAESEncryption::Decrypt(MCrypto::aesToQAesEnc(level),
+                                           modeToQAesMode(mode), encryptedText,
+                                           hashKey, hashIV)).toLocal8Bit();
 
 #endif
 }
@@ -153,10 +158,10 @@ QAESEncryption::MODE MCrypto::modeToQAesMode(const MCrypto::MODE mode)
 bool MCrypto::initEnc(const QByteArray &pwd)
 {
 #ifdef HAS_OPENSSL
-    key.clear();
-    iv.clear();
-    key.resize(EVP_MAX_KEY_LENGTH);
-    iv.resize(EVP_MAX_IV_LENGTH);
+    m_key.clear();
+    m_iv.clear();
+    m_key.resize(EVP_MAX_KEY_LENGTH);
+    m_iv.resize(EVP_MAX_IV_LENGTH);
 
     OpenSSL_add_all_ciphers();
     OpenSSL_add_all_digests();
@@ -164,7 +169,7 @@ bool MCrypto::initEnc(const QByteArray &pwd)
     e_ctx = EVP_CIPHER_CTX_new();
     EVP_CIPHER_CTX_init(e_ctx);
 
-    const EVP_CIPHER *cipher = EVP_get_cipherbyname(qPrintable(algorithm));
+    const EVP_CIPHER *cipher = EVP_get_cipherbyname(qPrintable(m_algorithm));
     if (!cipher) {
         EVP_CIPHER_CTX_cleanup(e_ctx);
         EVP_CIPHER_CTX_free(e_ctx);
@@ -181,19 +186,19 @@ bool MCrypto::initEnc(const QByteArray &pwd)
         return false;
     }
 
-    if(!EVP_BytesToKey(cipher, dgst, (const unsigned char *) salt.constData(),
+    if(!EVP_BytesToKey(cipher, dgst, (const unsigned char *) m_salt.constData(),
                        (const unsigned char *) pwd.constData(), pwd.size(),
-                       1, (unsigned char *)key.data(), (unsigned char *)iv.data()))
+                       1, (unsigned char *)m_key.data(), (unsigned char *)m_iv.data()))
      {
          return false;
      }
 
-    if (key.isEmpty() || iv.isEmpty())
+    if (m_key.isEmpty() || m_iv.isEmpty())
         return false;
 
     if (!EVP_EncryptInit_ex(e_ctx, cipher, nullptr,
-                            (const unsigned char*)key.constData(),
-                            (const unsigned char*)iv.constData()))
+                            (const unsigned char*)m_key.constData(),
+                            (const unsigned char*)m_iv.constData()))
         return false;
 
     return true;
@@ -264,11 +269,11 @@ QByteArray MCrypto::encrypt(const QByteArray &inba, const QByteArray &pwd)
 bool MCrypto::initDec(const QByteArray &pwd)
 {
 #ifdef HAS_OPENSSL
-    key.clear();
-    iv.clear();
+    m_key.clear();
+    m_iv.clear();
 
-    key.resize(EVP_MAX_KEY_LENGTH);
-    iv.resize(EVP_MAX_IV_LENGTH);
+    m_key.resize(EVP_MAX_KEY_LENGTH);
+    m_iv.resize(EVP_MAX_IV_LENGTH);
 
     OpenSSL_add_all_ciphers();
     OpenSSL_add_all_digests();
@@ -276,7 +281,7 @@ bool MCrypto::initDec(const QByteArray &pwd)
     d_ctx = EVP_CIPHER_CTX_new();
     EVP_CIPHER_CTX_init(d_ctx);
 
-    const EVP_CIPHER *decipher = EVP_get_cipherbyname(qPrintable(algorithm));
+    const EVP_CIPHER *decipher = EVP_get_cipherbyname(qPrintable(m_algorithm));
     if (!decipher) {
         EVP_CIPHER_CTX_cleanup(d_ctx);
         EVP_CIPHER_CTX_free(d_ctx);
@@ -293,19 +298,19 @@ bool MCrypto::initDec(const QByteArray &pwd)
         return false;
     }
 
-    if(!EVP_BytesToKey(decipher, dgst, (const unsigned char *) salt.constData(),
+    if(!EVP_BytesToKey(decipher, dgst, (const unsigned char *) m_salt.constData(),
                        (const unsigned char *) pwd.constData(), pwd.size(),
-                       1, (unsigned char *)key.data(), (unsigned char *)iv.data()))
+                       1, (unsigned char *)m_key.data(), (unsigned char *)m_iv.data()))
      {
          return false;
      }
 
-    if (key.isEmpty() || iv.isEmpty())
+    if (m_key.isEmpty() || m_iv.isEmpty())
         return false;
 
     if (!EVP_DecryptInit_ex(d_ctx, decipher, nullptr,
-                            (const unsigned char*)key.constData(),
-                            (const unsigned char*)iv.constData()))
+                            (const unsigned char*)m_key.constData(),
+                            (const unsigned char*)m_iv.constData()))
         return false;
 
     return true;

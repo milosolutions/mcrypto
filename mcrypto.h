@@ -52,10 +52,19 @@ public:
     } MODE;
     Q_ENUM(MODE)
 
-    explicit MCrypto(const MCrypto::AES encryption = MCrypto::AES_256, const MCrypto::MODE mode = MCrypto::CBC);
+    explicit MCrypto(const MCrypto::AES encryption = MCrypto::AES_256,
+                     const MCrypto::MODE mode = MCrypto::CBC);
 
-    Q_INVOKABLE static QByteArray encrypt(const MCrypto::AES level, const MCrypto::MODE mode, const QByteArray &rawText, const QByteArray &key, const QByteArray &iv = QByteArray());
-    Q_INVOKABLE static QByteArray decrypt(const MCrypto::AES level, const MCrypto::MODE mode, const QByteArray &encryptedText, const QByteArray &key, const QByteArray &iv = QByteArray());
+    Q_INVOKABLE static QByteArray encrypt(const MCrypto::AES level,
+                                          const MCrypto::MODE mode,
+                                          const QByteArray &rawText,
+                                          const QByteArray &key,
+                                          const QByteArray &iv = QByteArray());
+    Q_INVOKABLE static QByteArray decrypt(const MCrypto::AES level,
+                                          const MCrypto::MODE mode,
+                                          const QByteArray &encryptedText,
+                                          const QByteArray &key,
+                                          const QByteArray &iv = QByteArray());
 
     Q_INVOKABLE QByteArray encrypt(const QByteArray &inba, const QByteArray &pwd);
     Q_INVOKABLE QByteArray decrypt(const QByteArray &inba, const QByteArray &pwd);
@@ -70,14 +79,15 @@ private:
 #ifdef HAS_OPENSSL
     EVP_CIPHER_CTX *e_ctx;
     EVP_CIPHER_CTX *d_ctx;
-    QByteArray key;
-    QByteArray iv;
-    QByteArray algorithm;
+    QByteArray m_key;
+    QByteArray m_iv;
+    QByteArray m_algorithm;
 #endif
-    QAESEncryption::AES encryption;
-    QAESEncryption::MODE encryptionMode;
 
-    QByteArray salt;
+    QAESEncryption::AES m_encryption;
+    QAESEncryption::MODE m_encryptionMode;
+
+    const QByteArray m_salt;
 };
 
 #endif // ENCRYPTION_H
