@@ -15,7 +15,7 @@ set(SOURCES mcrypto.h mcrypto.cpp qaesencryption.h qaesencryption.cpp)
 add_library(mcrypto OBJECT ${SOURCES} ${OTHER_FILES})
 
 if (OPENSSL_FOUND)
-  message("MCrypto: using OpenSSL")
+  message("MCrypto: using OpenSSL ${OPENSSL_VERSION}")
   target_compile_definitions(mcrypto PUBLIC OPENSSL_INCLUDED)
   target_link_libraries(mcrypto
     Qt5::Core
