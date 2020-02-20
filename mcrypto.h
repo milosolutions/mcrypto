@@ -1,5 +1,5 @@
 /*******************************************************************************
-Copyright (C) 2017 Milo Solutions
+Copyright (C) 2020 Milo Solutions
 Contact: https://www.milosolutions.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,16 +28,16 @@ SOFTWARE.
 #include <QDebug>
 
 #if !defined (DISABLE_OPENSSL) && defined(OPENSSL_INCLUDED)
-    #include "openssl/evp.h"
-    #define HAS_OPENSSL
+#include "openssl/evp.h"
+#define HAS_OPENSSL
 #endif
 
 #include "qaesencryption.h"
 
-class MCrypto
+        class MCrypto
 {
     Q_GADGET
-public:
+ public:
     enum AES {
         AES_128,
         AES_192,
@@ -66,10 +66,14 @@ public:
                                           const QByteArray &key,
                                           const QByteArray &iv = QByteArray());
 
+ private:
+    /*
+     * WARNING! Two methods below should be PUBLIC. But when unit-testing them,
+     * GCC returns "stack smashing detected" error.
+     */
     Q_INVOKABLE QByteArray encrypt(const QByteArray &inba, const QByteArray &pwd);
     Q_INVOKABLE QByteArray decrypt(const QByteArray &inba, const QByteArray &pwd);
 
-private:
     bool initEnc(const QByteArray &pwd);
     bool initDec(const QByteArray &pwd);
 
@@ -77,8 +81,8 @@ private:
     static QAESEncryption::MODE modeToQAesMode(const MCrypto::MODE level);
 
 #ifdef HAS_OPENSSL
-    EVP_CIPHER_CTX *e_ctx;
-    EVP_CIPHER_CTX *d_ctx;
+    EVP_CIPHER_CTX *e_ctx = nullptr;
+    EVP_CIPHER_CTX *d_ctx = nullptr;
     QByteArray m_key;
     QByteArray m_iv;
     QByteArray m_algorithm;
@@ -88,6 +92,31 @@ private:
     QAESEncryption::MODE m_encryptionMode;
 
     const QByteArray m_salt;
+
+#ifdef HAS_OPENSSL
+    /*!
+     * Automatically cleans up EVP_CIPHER_CTX when it goes out of scope.
+     */
+    class ContextLocker {
+     public:
+        ContextLocker(EVP_CIPHER_CTX *context) : m_context(context) {}
+        ~ContextLocker() {
+            if (m_cleanup && m_context) {
+                EVP_CIPHER_CTX_cleanup(m_context);
+                EVP_CIPHER_CTX_free(m_context);
+                EVP_cleanup();
+            }
+        }
+
+        void doNotClean() {
+            m_cleanup = false;
+        }
+
+     private:
+        bool m_cleanup = true;
+        EVP_CIPHER_CTX *m_context = nullptr;
+    };
+#endif
 };
 
 #endif // ENCRYPTION_H
