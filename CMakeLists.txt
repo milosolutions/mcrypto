@@ -19,8 +19,8 @@ if (OPENSSL_FOUND)
   target_compile_definitions(mcrypto PUBLIC OPENSSL_INCLUDED)
   target_link_libraries(mcrypto
     Qt5::Core
-    $<OPENSSL_FOUND:OpenSSL::SSL>
-    $<OPENSSL_FOUND:OpenSSL::Crypto>
+    OpenSSL::SSL
+    OpenSSL::Crypto
   )
 else ()
   message("MCrypto: using default backend (not OpenSSL). Warning: it has not undergone security audit!")
