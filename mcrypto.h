@@ -105,6 +105,7 @@ SOFTWARE.
                 EVP_CIPHER_CTX_cleanup(m_context);
                 EVP_CIPHER_CTX_free(m_context);
                 EVP_cleanup();
+                m_context = nullptr;
             }
         }
 
