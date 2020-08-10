@@ -1,3 +1,6 @@
+if (POLICY CMP0048)
+  cmake_policy(SET CMP0048 NEW)
+endif ()
 
 project(mcrypto
   VERSION 0.0.1
@@ -10,9 +13,11 @@ message("MCrypto: cmake support for MCrypto is incomplete! Please fix Android et
 find_package(Qt5 COMPONENTS REQUIRED Core)
 find_package(OpenSSL)
 
+set(CMAKE_AUTOMOC ON)
+
 set(SOURCES mcrypto.h mcrypto.cpp qaesencryption.h qaesencryption.cpp)
 
-add_library(mcrypto OBJECT ${SOURCES} ${OTHER_FILES})
+add_library(mcrypto STATIC ${SOURCES} ${OTHER_FILES})
 
 if (OPENSSL_FOUND)
   message("MCrypto: using OpenSSL ${OPENSSL_VERSION}")
@@ -34,7 +39,6 @@ target_compile_definitions(mcrypto PUBLIC MCRYPTO_LIB)
 
 target_include_directories(mcrypto
   PUBLIC
-  $<INSTALL_INTERFACE:include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 

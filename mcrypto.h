@@ -66,14 +66,10 @@ SOFTWARE.
                                           const QByteArray &key,
                                           const QByteArray &iv = QByteArray());
 
- private:
-    /*
-     * WARNING! Two methods below should be PUBLIC. But when unit-testing them,
-     * GCC returns "stack smashing detected" error.
-     */
     Q_INVOKABLE QByteArray encrypt(const QByteArray &inba, const QByteArray &pwd);
     Q_INVOKABLE QByteArray decrypt(const QByteArray &inba, const QByteArray &pwd);
 
+ private:
     bool initEnc(const QByteArray &pwd);
     bool initDec(const QByteArray &pwd);
 
