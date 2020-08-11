@@ -2,6 +2,8 @@ if (POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW)
 endif ()
 
+cmake_minimum_required(VERSION 3.5)
+
 project(mcrypto
   VERSION 0.0.1
   DESCRIPTION "Milo simple cryptography wrapper"
