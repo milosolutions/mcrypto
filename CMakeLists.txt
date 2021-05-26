@@ -1,7 +1,3 @@
-if (POLICY CMP0048)
-  cmake_policy(SET CMP0048 NEW)
-endif ()
-
 cmake_minimum_required(VERSION 3.5)
 
 project(mcrypto
@@ -16,24 +12,32 @@ find_package(Qt5 COMPONENTS REQUIRED Core)
 find_package(OpenSSL)
 
 set(CMAKE_AUTOMOC ON)
+option(mcrypto-nossl "MCrypto: Manual switch for disabling OpenSSL library" OFF)
 
-set(SOURCES mcrypto.h mcrypto.cpp qaesencryption.h qaesencryption.cpp)
+if (mcrypto-nossl)
+    message("MCrypto: OpenSSL is manually disabled.")
+endif()
 
-add_library(mcrypto STATIC ${SOURCES} ${OTHER_FILES})
+set(SOURCES mcrypto.h mcrypto.cpp)
+if (OPENSSL_FOUND AND NOT mcrypto-nossl)
+    list(APPEND SOURCES backend/mcb_openssl.h backend/mcb_openssl.cpp)
+else()
+    list(APPEND SOURCES backend/mcb_qaes.h backend/mcb_qaes.cpp
+        backend/qaesencryption.h backend/qaesencryption.cpp)
+endif ()
 
-if (OPENSSL_FOUND)
+add_library(mcrypto STATIC ${SOURCES})
+target_link_libraries(mcrypto PUBLIC Qt5::Core)
+
+if (OPENSSL_FOUND AND NOT mcrypto-nossl)
   message("MCrypto: using OpenSSL ${OPENSSL_VERSION}")
-  target_compile_definitions(mcrypto PUBLIC OPENSSL_INCLUDED)
-  target_link_libraries(mcrypto
-    Qt5::Core
+  target_compile_definitions(mcrypto PRIVATE USING_OPENSSL)
+  target_link_libraries(mcrypto PRIVATE
     OpenSSL::SSL
     OpenSSL::Crypto
   )
 else ()
   message("MCrypto: using default backend (not OpenSSL). Warning: it has not undergone security audit!")
-  target_link_libraries(mcrypto
-    Qt5::Core
-  )
 endif ()
 
 # Defines
