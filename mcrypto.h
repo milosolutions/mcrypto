@@ -25,16 +25,8 @@ SOFTWARE.
 #define ENCRYPTION_H
 
 #include <QObject>
-#include <QDebug>
 
-#if !defined (DISABLE_OPENSSL) && defined(OPENSSL_INCLUDED)
-#include "openssl/evp.h"
-#define HAS_OPENSSL
-#endif
-
-#include "qaesencryption.h"
-
-        class MCrypto
+class MCrypto
 {
     Q_GADGET
  public:
@@ -54,6 +46,7 @@ SOFTWARE.
 
     explicit MCrypto(const MCrypto::AES encryption = MCrypto::AES_256,
                      const MCrypto::MODE mode = MCrypto::CBC);
+    ~MCrypto();
 
     Q_INVOKABLE static QByteArray encrypt(const MCrypto::AES level,
                                           const MCrypto::MODE mode,
@@ -69,51 +62,15 @@ SOFTWARE.
     Q_INVOKABLE QByteArray encrypt(const QByteArray &inba, const QByteArray &pwd);
     Q_INVOKABLE QByteArray decrypt(const QByteArray &inba, const QByteArray &pwd);
 
- private:
-    bool initEnc(const QByteArray &pwd);
-    bool initDec(const QByteArray &pwd);
-
-    static QAESEncryption::AES aesToQAesEnc(const MCrypto::AES level);
-    static QAESEncryption::MODE modeToQAesMode(const MCrypto::MODE level);
-
-#ifdef HAS_OPENSSL
-    EVP_CIPHER_CTX *e_ctx = nullptr;
-    EVP_CIPHER_CTX *d_ctx = nullptr;
-    QByteArray m_key;
-    QByteArray m_iv;
-    QByteArray m_algorithm;
-#endif
-
-    QAESEncryption::AES m_encryption;
-    QAESEncryption::MODE m_encryptionMode;
-
-    const QByteArray m_salt;
-
-#ifdef HAS_OPENSSL
-    /*!
-     * Automatically cleans up EVP_CIPHER_CTX when it goes out of scope.
-     */
-    class ContextLocker {
-     public:
-        ContextLocker(EVP_CIPHER_CTX *context) : m_context(context) {}
-        ~ContextLocker() {
-            if (m_cleanup && m_context) {
-                EVP_CIPHER_CTX_cleanup(m_context);
-                EVP_CIPHER_CTX_free(m_context);
-                EVP_cleanup();
-                m_context = nullptr;
-            }
-        }
-
-        void doNotClean() {
-            m_cleanup = false;
-        }
-
-     private:
-        bool m_cleanup = true;
-        EVP_CIPHER_CTX *m_context = nullptr;
+    class Backend {
+    public:
+        virtual ~Backend() = default;
+        virtual QByteArray encrypt(const QByteArray &inba, const QByteArray &pwd) = 0;
+        virtual QByteArray decrypt(const QByteArray &inba, const QByteArray &pwd) = 0;
     };
-#endif
+
+ private:
+    Backend *backend{nullptr};
 };
 
 #endif // ENCRYPTION_H
