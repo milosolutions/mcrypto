@@ -6,8 +6,6 @@ add_executable(tst_mcrypto tst_mcrypto.cpp)
 target_link_libraries(tst_mcrypto mcrypto
   Qt5::Core
   Qt5::Test
-  OpenSSL::SSL
-  OpenSSL::Crypto
 )
 
 add_test(tst_mcrypto tst_mcrypto)

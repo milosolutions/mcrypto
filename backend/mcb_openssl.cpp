@@ -1,6 +1,7 @@
 #include "mcb_openssl.h"
 #include <QDebug>
 #include <QMetaEnum>
+#include <openssl/evp.h>
 
 /*!
  * Automatically cleans up EVP_CIPHER_CTX when it goes out of scope.

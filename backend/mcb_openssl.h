@@ -1,7 +1,9 @@
 #pragma once
 
 #include "mcrypto.h"
-#include "openssl/evp.h"
+
+struct evp_cipher_ctx_st;
+using EVP_CIPHER_CTX = evp_cipher_ctx_st;
 
 class MCB_OpenSsl : public MCrypto::Backend
 {

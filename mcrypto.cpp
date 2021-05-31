@@ -23,8 +23,7 @@ SOFTWARE.
 
 #include "mcrypto.h"
 
-#if !defined (DISABLE_OPENSSL) && defined(OPENSSL_INCLUDED)
-    #define HAS_OPENSSL
+#ifdef USING_OPENSSL
     #include "backend/mcb_openssl.h"
 #else
     #include "backend/mcb_qaes.h"
@@ -39,7 +38,7 @@ SOFTWARE.
  */
 MCrypto::MCrypto(const MCrypto::AES encryption, const MCrypto::MODE mode)
 {
-#ifdef HAS_OPENSSL
+#ifdef USING_OPENSSL
     backend = new MCB_OpenSsl(encryption, mode);
 #else
     backend = new MCB_QAes(encryption, mode);
