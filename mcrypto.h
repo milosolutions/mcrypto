@@ -45,7 +45,6 @@ class MCrypto
     Q_ENUM(MODE)
 
     explicit MCrypto(KEY_SIZE encryption = KEY_256, MODE mode = CBC);
-    ~MCrypto();
 
     Q_INVOKABLE static QByteArray encrypt(KEY_SIZE bits,
                                           MODE mode,
@@ -64,16 +63,18 @@ class MCrypto
     Q_INVOKABLE QByteArray decrypt(const QByteArray &input,
                                    const QByteArray &pwd,
                                    const QByteArray &salt = {});
-
+ private:
+    struct InternalData;
     class Backend {
     public:
-        virtual ~Backend() = default;
-        virtual QByteArray encrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt) = 0;
-        virtual QByteArray decrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt) = 0;
+        Backend(MCrypto::KEY_SIZE bits, MCrypto::MODE mode);
+        ~Backend();
+        QByteArray encrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt);
+        QByteArray decrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt);
+    private:
+        InternalData* m;
     };
-
- private:
-    Backend *backend{nullptr};
+    Backend backend;
 };
 
 #endif // ENCRYPTION_H

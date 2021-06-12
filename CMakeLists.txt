@@ -20,10 +20,9 @@ endif()
 
 set(SOURCES mcrypto.h mcrypto.cpp)
 if (OPENSSL_FOUND AND NOT mcrypto-nossl)
-    list(APPEND SOURCES backend/mcb_openssl.h backend/mcb_openssl.cpp)
+    list(APPEND SOURCES backend/mcb_openssl.cpp)
 else()
-    list(APPEND SOURCES backend/mcb_qaes.h backend/mcb_qaes.cpp
-        backend/qaesencryption.h backend/qaesencryption.cpp)
+    list(APPEND SOURCES backend/mcb_qaes.cpp backend/qaesencryption.cpp)
 endif ()
 
 add_library(mcrypto STATIC ${SOURCES})
@@ -31,7 +30,6 @@ target_link_libraries(mcrypto PUBLIC Qt5::Core)
 
 if (OPENSSL_FOUND AND NOT mcrypto-nossl)
   message("MCrypto: using OpenSSL ${OPENSSL_VERSION}")
-  target_compile_definitions(mcrypto PRIVATE USING_OPENSSL)
   target_link_libraries(mcrypto PRIVATE
     OpenSSL::SSL
     OpenSSL::Crypto
