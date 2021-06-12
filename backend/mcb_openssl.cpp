@@ -1,11 +1,9 @@
-#include "mcb_openssl.h"
+#include "mcrypto.h"
 #include <QDebug>
 #include <QMetaEnum>
 #include <openssl/evp.h>
 
-/*!
- * Automatically cleans up EVP_CIPHER_CTX when it goes out of scope.
- */
+// Automatically cleans up EVP_CIPHER_CTX when it goes out of scope.
 class ContextLocker {
  public:
     ContextLocker(EVP_CIPHER_CTX *context) : m_context(context) {}
@@ -23,35 +21,146 @@ class ContextLocker {
     }
 
  private:
-    bool m_cleanup = true;
-    EVP_CIPHER_CTX *m_context = nullptr;
+    bool m_cleanup{true};
+    EVP_CIPHER_CTX *m_context{nullptr};
 };
 
-MCB_OpenSsl::MCB_OpenSsl(MCrypto::KEY_SIZE bits, MCrypto::MODE mode)
-    : // Salt mustn't be saved as plain string!
-      m_salt(QByteArray(MCrypto::staticMetaObject.className()
-                        + QByteArray("12")
-                        + QByteArray::number(0x11abc126)))
+struct MCrypto::InternalData
 {
-    m_algorithm = QByteArray(QMetaEnum::fromType<MCrypto::KEY_SIZE>()
+    bool initEnc(const QByteArray &pwd);
+    bool initDec(const QByteArray &pwd);
+    EVP_CIPHER_CTX *e_ctx = nullptr;
+    EVP_CIPHER_CTX *d_ctx = nullptr;
+    QByteArray key;
+    QByteArray iv;
+    QByteArray algorithm;
+    const QByteArray salt{MCrypto::staticMetaObject.className()
+                + QByteArray("12")
+                + QByteArray::number(0x11abc126)};
+};
+
+bool MCrypto::InternalData::initEnc(const QByteArray &pwd)
+{
+    key = QByteArray(EVP_MAX_KEY_LENGTH, 0);
+    iv = QByteArray(EVP_MAX_IV_LENGTH, 0);
+
+    OpenSSL_add_all_ciphers();
+    OpenSSL_add_all_digests();
+
+    if (e_ctx) { // Clean up old CTX if present
+        ContextLocker locker(e_ctx);
+    }
+    e_ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER_CTX_init(e_ctx);
+    ContextLocker locker(e_ctx);
+
+    const EVP_CIPHER *cipher = EVP_get_cipherbyname(qPrintable(algorithm));
+    if (!cipher) {
+        return false;
+    }
+
+    const EVP_MD *dgst = EVP_get_digestbyname(qPrintable("md5"));
+
+    if (!dgst) {
+        return false;
+    }
+
+    if(!EVP_BytesToKey(cipher, dgst, (const unsigned char *) salt.constData(),
+                        (const unsigned char *) pwd.constData(), pwd.size(),
+                        1, (unsigned char *)key.data(), (unsigned char *)iv.data()))
+    {
+        return false;
+    }
+
+    if (key.isEmpty() || iv.isEmpty()) {
+        return false;
+    }
+
+    if (!EVP_EncryptInit_ex(e_ctx, cipher, nullptr,
+                            (const unsigned char*)key.constData(),
+                            (const unsigned char*)iv.constData())) {
+        return false;
+    }
+
+    locker.doNotClean();
+    return true;
+}
+
+bool MCrypto::InternalData::initDec(const QByteArray &pwd)
+{
+    key = QByteArray(EVP_MAX_KEY_LENGTH, 0);
+    iv = QByteArray(EVP_MAX_IV_LENGTH, 0);
+
+    OpenSSL_add_all_ciphers();
+    OpenSSL_add_all_digests();
+
+    if (d_ctx) { // Clean up old CTX if present
+        ContextLocker locker(d_ctx);
+    }
+    d_ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER_CTX_init(d_ctx);
+
+    ContextLocker locker(d_ctx);
+
+    const EVP_CIPHER *decipher = EVP_get_cipherbyname(qPrintable(algorithm));
+    if (!decipher) {
+        return false;
+    }
+
+    const EVP_MD *dgst = EVP_get_digestbyname(qPrintable("md5"));
+
+    if (!dgst) {
+        return false;
+    }
+
+    if(!EVP_BytesToKey(decipher, dgst, (const unsigned char *) salt.constData(),
+                        (const unsigned char *) pwd.constData(), pwd.size(),
+                        1, (unsigned char *)key.data(), (unsigned char *)iv.data()))
+    {
+        return false;
+    }
+
+    if (key.isEmpty() || iv.isEmpty()) {
+        return false;
+    }
+
+    if (!EVP_DecryptInit_ex(d_ctx, decipher, nullptr,
+                            (const unsigned char*)key.constData(),
+                            (const unsigned char*)iv.constData())) {
+        return false;
+    }
+
+    locker.doNotClean();
+    return true;
+}
+
+MCrypto::Backend::Backend(MCrypto::KEY_SIZE bits, MCrypto::MODE mode)
+{
+    m = new InternalData;
+    m->algorithm = QByteArray(QMetaEnum::fromType<MCrypto::KEY_SIZE>()
                                  .valueToKey(int(bits))).replace('_', '-')
                   + QByteArray("-")
                   + QByteArray(QMetaEnum::fromType<MCrypto::MODE>().valueToKey(int(mode)));
 }
 
-QByteArray MCB_OpenSsl::encrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt)
+MCrypto::Backend::~Backend()
+{
+    delete m;
+}
+
+QByteArray MCrypto::Backend::encrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt)
 {
     QByteArray outbuf;
 
-    if (initEnc(pwd))
+    if (m->initEnc(pwd))
     {
-        ContextLocker locker(e_ctx);
+        ContextLocker locker(m->e_ctx);
         int inlen = 0, outlen = 0, len = 0;
         inlen = input.size();
 
         outbuf = QByteArray(inlen + EVP_MAX_BLOCK_LENGTH, 0);
 
-        if (!EVP_EncryptUpdate(e_ctx, (unsigned char*)outbuf.data(), &len,
+        if (!EVP_EncryptUpdate(m->e_ctx, (unsigned char*)outbuf.data(), &len,
                                (const unsigned char*)input.constData(), inlen)) {
             return QByteArray();
         }
@@ -59,7 +168,7 @@ QByteArray MCB_OpenSsl::encrypt(const QByteArray &input, const QByteArray &pwd, 
         outlen = len;
 
         if (!EVP_EncryptFinal_ex(
-                e_ctx, ((unsigned char*)outbuf.data()) + len, &len)) {
+                m->e_ctx, ((unsigned char*)outbuf.data()) + len, &len)) {
             return QByteArray();
         }
 
@@ -73,25 +182,25 @@ QByteArray MCB_OpenSsl::encrypt(const QByteArray &input, const QByteArray &pwd, 
     return outbuf;
 }
 
-QByteArray MCB_OpenSsl::decrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt)
+QByteArray MCrypto::Backend::decrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt)
 {
     QByteArray outbuf;
 
-    if (initDec(pwd)) {
-        ContextLocker locker(d_ctx);
+    if (m->initDec(pwd)) {
+        ContextLocker locker(m->d_ctx);
         int inlen = 0, outlen = 0;
         inlen = input.size();
 
         outbuf = QByteArray(inlen + EVP_MAX_BLOCK_LENGTH, 0);
 
-        if (!EVP_DecryptUpdate(d_ctx, (unsigned char*)outbuf.data(), &outlen,
+        if (!EVP_DecryptUpdate(m->d_ctx, (unsigned char*)outbuf.data(), &outlen,
                                (const unsigned char*)input.constData(), inlen)) {
             return QByteArray();
         }
 
         int tmplen = 0;
 
-        if (!EVP_DecryptFinal_ex(d_ctx,
+        if (!EVP_DecryptFinal_ex(m->d_ctx,
                                  ((unsigned char*)outbuf.data()) + outlen, &tmplen)) {
             qDebug() << "--- !EVP_EncryptFinal_ex";
             return QByteArray();
@@ -105,115 +214,4 @@ QByteArray MCB_OpenSsl::decrypt(const QByteArray &input, const QByteArray &pwd, 
     }
 
     return outbuf;
-}
-
-/*!
- * \brief init encryption algorithm
- * \param pwd if empty content is NOT encrypted
- * \return true on success
- */
-bool MCB_OpenSsl::initEnc(const QByteArray &pwd)
-{
-    m_key.clear();
-    m_iv.clear();
-
-    m_key = QByteArray(EVP_MAX_KEY_LENGTH, 0);
-    m_iv = QByteArray(EVP_MAX_IV_LENGTH, 0);
-
-    OpenSSL_add_all_ciphers();
-    OpenSSL_add_all_digests();
-
-    if (e_ctx) { // Clean up old CTX if present
-        ContextLocker locker(e_ctx);
-    }
-    e_ctx = EVP_CIPHER_CTX_new();
-    EVP_CIPHER_CTX_init(e_ctx);
-    ContextLocker locker(e_ctx);
-
-    const EVP_CIPHER *cipher = EVP_get_cipherbyname(qPrintable(m_algorithm));
-    if (!cipher) {
-        return false;
-    }
-
-    const EVP_MD *dgst = EVP_get_digestbyname(qPrintable("md5"));
-
-    if (!dgst) {
-        return false;
-    }
-
-    if(!EVP_BytesToKey(cipher, dgst, (const unsigned char *) m_salt.constData(),
-                        (const unsigned char *) pwd.constData(), pwd.size(),
-                        1, (unsigned char *)m_key.data(), (unsigned char *)m_iv.data()))
-    {
-        return false;
-    }
-
-    if (m_key.isEmpty() || m_iv.isEmpty()) {
-        return false;
-    }
-
-    if (!EVP_EncryptInit_ex(e_ctx, cipher, nullptr,
-                            (const unsigned char*)m_key.constData(),
-                            (const unsigned char*)m_iv.constData())) {
-        return false;
-    }
-
-    locker.doNotClean();
-    return true;
-}
-
-MCrypto::Backend::Backend(MCrypto::AES_TYPE bits, MCrypto::MODE mode)
- * \brief initialise decoder to use
- * \param pwd
-    m->algorithm = QByteArray(QMetaEnum::fromType<MCrypto::AES_TYPE>()
- */
-bool MCB_OpenSsl::initDec(const QByteArray &pwd)
-{
-    m_key.clear();
-    m_iv.clear();
-
-    m_key = QByteArray(EVP_MAX_KEY_LENGTH, 0);
-    m_iv = QByteArray(EVP_MAX_IV_LENGTH, 0);
-
-    OpenSSL_add_all_ciphers();
-    OpenSSL_add_all_digests();
-
-    if (d_ctx) { // Clean up old CTX if present
-        ContextLocker locker(d_ctx);
-    }
-    d_ctx = EVP_CIPHER_CTX_new();
-    EVP_CIPHER_CTX_init(d_ctx);
-
-    ContextLocker locker(d_ctx);
-
-    const EVP_CIPHER *decipher = EVP_get_cipherbyname(qPrintable(m_algorithm));
-    if (!decipher) {
-        return false;
-    }
-
-    const EVP_MD *dgst = EVP_get_digestbyname(qPrintable("md5"));
-
-    if (!dgst) {
-        return false;
-    }
-
-    if(!EVP_BytesToKey(decipher, dgst, (const unsigned char *) m_salt.constData(),
-                        (const unsigned char *) pwd.constData(), pwd.size(),
-                        1, (unsigned char *)m_key.data(), (unsigned char *)m_iv.data()))
-    {
-        return false;
-    }
-
-    if (m_key.isEmpty() || m_iv.isEmpty()) {
-        return false;
-    }
-
-    if (!EVP_DecryptInit_ex(d_ctx, decipher, nullptr,
-                            (const unsigned char*)m_key.constData(),
-                            (const unsigned char*)m_iv.constData())) {
-        return false;
-    }
-
-    locker.doNotClean();
-    return true;
 }

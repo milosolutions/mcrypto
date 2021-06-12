@@ -31,13 +31,8 @@ android {
 }
 
 INCLUDEPATH += $$PWD
-
-SOURCES += $$PWD/mcrypto.cpp \
-    $$PWD/qaesencryption.cpp
-
-HEADERS += $$PWD/mcrypto.h \
-    $$PWD/qaesencryption.h
-
+SOURCES += $$PWD/mcrypto.cpp
+HEADERS += $$PWD/mcrypto.h
 DEFINES += MCRYPTO_LIB
 
 no-openssl {
@@ -46,7 +41,8 @@ no-openssl {
 
 openssl {
     message("MCrypto: using OpenSSL")
-    DEFINES += OPENSSL_INCLUDED
+    SOURCES += $$PWD/backend/mcb_openssl.cpp
 } else {
     message("MCrypto: using default backend (not OpenSSL). Warning: it has not undergone security audit!")
+    SOURCES += $$PWD/backend/mcb_qaes.cpp $$PWD/backend/qaesencryption.cpp
 }

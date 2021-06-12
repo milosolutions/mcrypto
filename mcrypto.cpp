@@ -23,12 +23,10 @@ SOFTWARE.
 
 #include "mcrypto.h"
 
-#ifdef USING_OPENSSL
-    #include "backend/mcb_openssl.h"
-#else
-    #include "backend/mcb_qaes.h"
-#endif
-
+// Actual implementation of backend is in file mcb_openssl.cpp or mcb_qaes.cpp
+// depending on current settings of mcrypto. CMake will choose proper file for you.
+// Never build both of them in your project as they provide implementation of the same
+// objects and will lead to linking errors.
 
 /*!
  * \brief Encryption wrapper for 3rd party AES implementations
@@ -50,16 +48,7 @@ SOFTWARE.
  */
 MCrypto::MCrypto(AES_TYPE bits, MODE mode) : backend(bits, mode)
 {
-#ifdef USING_OPENSSL
-    backend = new MCB_OpenSsl(bits, mode);
-#else
-    backend = new MCB_QAes(bits, mode);
-#endif
-}
-
-MCrypto::~MCrypto()
-{
-    delete backend;
+    // Nothing
 }
 
 /*!
@@ -95,7 +84,7 @@ QByteArray MCrypto::decrypt(const AES_TYPE bits, const MCrypto::MODE mode,
  */
 QByteArray MCrypto::encrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt)
 {
-    return backend->encrypt(input, pwd, salt);
+    return backend.encrypt(input, pwd, salt);
 }
 
 /*!
@@ -112,5 +101,5 @@ QByteArray MCrypto::encrypt(const QByteArray &input, const QByteArray &pwd, cons
  */
 QByteArray MCrypto::decrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt)
 {
-    return backend->decrypt(input, pwd, salt);
+    return backend.decrypt(input, pwd, salt);
 }
