@@ -1,0 +1,51 @@
+cmake_minimum_required(VERSION 3.16.0)
+
+project(mcrypto
+  VERSION 0.0.1
+  DESCRIPTION "Milo simple cryptography wrapper"
+  LANGUAGES CXX
+)
+
+message("MCrypto: cmake support for MCrypto is incomplete! Please fix Android etc.!")
+
+find_package(Qt6 COMPONENTS REQUIRED Core)
+find_package(OpenSSL)
+
+set(CMAKE_AUTOMOC ON)
+option(mcrypto-nossl "MCrypto: Manual switch for disabling OpenSSL library" OFF)
+
+if (mcrypto-nossl)
+    message("MCrypto: OpenSSL is manually disabled.")
+endif()
+
+set(SOURCES mcrypto.h mcrypto.cpp)
+if (OPENSSL_FOUND AND NOT mcrypto-nossl)
+    list(APPEND SOURCES backend/mcb_openssl.h backend/mcb_openssl.cpp)
+else()
+    list(APPEND SOURCES backend/mcb_qaes.h backend/mcb_qaes.cpp
+        backend/qaesencryption.h backend/qaesencryption.cpp)
+endif ()
+
+add_library(mcrypto STATIC ${SOURCES})
+target_link_libraries(mcrypto PUBLIC Qt6::Core)
+
+if (OPENSSL_FOUND AND NOT mcrypto-nossl)
+  message("MCrypto: using OpenSSL ${OPENSSL_VERSION}")
+  target_compile_definitions(mcrypto PRIVATE USING_OPENSSL)
+  target_link_libraries(mcrypto PRIVATE
+    OpenSSL::SSL
+    OpenSSL::Crypto
+  )
+else ()
+  message("MCrypto: using default backend (not OpenSSL). Warning: it has not undergone security audit!")
+endif ()
+
+# Defines
+target_compile_definitions(mcrypto PUBLIC MCRYPTO_LIB)
+
+target_include_directories(mcrypto
+  PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+)
+
+#add_subdirectory(tst_mcrypto)
