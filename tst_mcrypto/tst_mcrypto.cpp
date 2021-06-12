@@ -68,10 +68,10 @@ void TestMCrypto::testEncryptedStatic()
     const QByteArray pass(TestMCrypto::metaObject()->className());
     const QByteArray data("The Advanced Encryption Standard (AES).");
 
-    const QByteArray encryptedData = MCrypto::encrypt(MCrypto::AES_256,
+    const QByteArray encryptedData = MCrypto::encrypt(MCrypto::KEY_256,
                                                       MCrypto::CBC,
                                                       data, pass);
-    const QByteArray decryptedData = MCrypto::decrypt(MCrypto::AES_256,
+    const QByteArray decryptedData = MCrypto::decrypt(MCrypto::KEY_256,
                                                       MCrypto::CBC,
                                                       encryptedData, pass);
 

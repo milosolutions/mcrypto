@@ -30,12 +30,12 @@ class MCrypto
 {
     Q_GADGET
  public:
-    enum AES {
+    enum AES_TYPE {
         AES_128,
         AES_192,
         AES_256
     };
-    Q_ENUM(AES)
+    Q_ENUM(AES_TYPE)
 
     typedef enum MODE {
         ECB,
@@ -44,29 +44,32 @@ class MCrypto
     } MODE;
     Q_ENUM(MODE)
 
-    explicit MCrypto(const MCrypto::AES encryption = MCrypto::AES_256,
-                     const MCrypto::MODE mode = MCrypto::CBC);
+    explicit MCrypto(AES_TYPE encryption = AES_256, MODE mode = CBC);
     ~MCrypto();
 
-    Q_INVOKABLE static QByteArray encrypt(const MCrypto::AES level,
-                                          const MCrypto::MODE mode,
-                                          const QByteArray &rawText,
-                                          const QByteArray &key,
-                                          const QByteArray &iv = QByteArray());
-    Q_INVOKABLE static QByteArray decrypt(const MCrypto::AES level,
-                                          const MCrypto::MODE mode,
-                                          const QByteArray &encryptedText,
-                                          const QByteArray &key,
-                                          const QByteArray &iv = QByteArray());
+    Q_INVOKABLE static QByteArray encrypt(AES_TYPE bits,
+                                          MODE mode,
+                                          const QByteArray &input,
+                                          const QByteArray &pwd,
+                                          const QByteArray &salt = {});
+    Q_INVOKABLE static QByteArray decrypt(AES_TYPE bits,
+                                          MODE mode,
+                                          const QByteArray &input,
+                                          const QByteArray &pwd,
+                                          const QByteArray &salt = {});
 
-    Q_INVOKABLE QByteArray encrypt(const QByteArray &inba, const QByteArray &pwd);
-    Q_INVOKABLE QByteArray decrypt(const QByteArray &inba, const QByteArray &pwd);
+    Q_INVOKABLE QByteArray encrypt(const QByteArray &input,
+                                   const QByteArray &pwd,
+                                   const QByteArray &salt = {});
+    Q_INVOKABLE QByteArray decrypt(const QByteArray &input,
+                                   const QByteArray &pwd,
+                                   const QByteArray &salt = {});
 
     class Backend {
     public:
-        virtual ~Backend() = default;
-        virtual QByteArray encrypt(const QByteArray &inba, const QByteArray &pwd) = 0;
-        virtual QByteArray decrypt(const QByteArray &inba, const QByteArray &pwd) = 0;
+        Backend(MCrypto::AES_TYPE bits, MCrypto::MODE mode);
+        virtual QByteArray encrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt) = 0;
+        virtual QByteArray decrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt) = 0;
     };
 
  private:

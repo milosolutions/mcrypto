@@ -31,17 +31,29 @@ SOFTWARE.
 
 
 /*!
- * \brief crypto functionality based on OpenSSL
+ * \brief Encryption wrapper for 3rd party AES implementations
+ *
+ *  Wrapper provides easy to use interfaces to minimize time spent
+ *  on configuring encryption libs.
+ *
+ *  There are two backends that implement AES standard:
+ *
+ *  * OpenSSL (recommended)
+ *  * QAESEncryption
+ *
+ *  If OpenSSL development files are not detected QAESEncryption will be used
+ *  as fallback backend.
+ *
  *  NOTICE: MacOsX uses it's own implementation that differes from OpenSSL one
- *        that's why it will generate deprecated functions warnings.
- *        To bypass this link statically to OpenSSL.
+ *  that's why it will generate deprecated functions warnings.
+ *  To bypass this link statically to OpenSSL.
  */
-MCrypto::MCrypto(const MCrypto::AES encryption, const MCrypto::MODE mode)
+MCrypto::MCrypto(AES_TYPE bits, MODE mode) : backend(bits, mode)
 {
 #ifdef USING_OPENSSL
-    backend = new MCB_OpenSsl(encryption, mode);
+    backend = new MCB_OpenSsl(bits, mode);
 #else
-    backend = new MCB_QAes(encryption, mode);
+    backend = new MCB_QAes(bits, mode);
 #endif
 }
 
@@ -51,61 +63,54 @@ MCrypto::~MCrypto()
 }
 
 /*!
- * \brief Static method to encrypt data
- * \param level
- * \param mode
- * \param encryptedText
- * \param key
- * \param iv default empty string
- * \return Encrypted data
+ * Convenience method. Creates MCrypto object and run encrypt method on it.
+ * \sa MCrypto::MCrypto
+ * \sa MCrypto::encrypt
  */
-QByteArray MCrypto::encrypt(const MCrypto::AES level, const MCrypto::MODE mode,
-                            const QByteArray &rawText, const QByteArray &key,
-                            const QByteArray &iv)
+QByteArray MCrypto::encrypt(const MCrypto::AES_TYPE bits, const MCrypto::MODE mode,
+                            const QByteArray &input, const QByteArray &pwd,
+                            const QByteArray &salt)
 {
-    // TODO iv vector should be accessible via interface
-    Q_UNUSED(iv);
-    return MCrypto(level, mode).encrypt(rawText, key);
+    return MCrypto(bits, mode).encrypt(input, pwd, salt);
 }
 
 /*!
- * \brief Static method to decrypt data
- * \param level
- * \param mode
- * \param encryptedText
- * \param key
- * \param iv default empty string
- * \return Decrypted data
+ * Convenience method. Creates MCrypto object and run decrypt method on it.
+ * \sa MCrypto::MCrypto
+ * \sa MCrypto::decrypt
  */
-QByteArray MCrypto::decrypt(const MCrypto::AES level, const MCrypto::MODE mode,
-                            const QByteArray &encryptedText, const QByteArray &key,
-                            const QByteArray &iv)
+QByteArray MCrypto::decrypt(const AES_TYPE bits, const MCrypto::MODE mode,
+                            const QByteArray &input, const QByteArray &pwd,
+                            const QByteArray &salt)
 {
-    // TODO iv vector should be accessible via interface
-    Q_UNUSED(iv)
-    return MCrypto(level, mode).decrypt(encryptedText, key);
+    return MCrypto(bits, mode).decrypt(input, pwd, salt);
 }
 
 /*!
- * \brief encrypt data from \param inba until \param pwd
+ * Encrypt \a input using \a pwd and \a salt.
+ * \param input bytes to be encoded
+ * \param pwd secret passphrase for generating encryption key
+ * \param salt additional random sequence of bytes that will be used to generate Initialization Vectors (IV)
  * \return encrypted data
- *      NOTE: inba don't need to contains wholed data that is
- *      encrypted to operate corectly it can be small chunk of
- *      i.e. whole file
  */
-QByteArray MCrypto::encrypt(const QByteArray &inba, const QByteArray &pwd)
+QByteArray MCrypto::encrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt)
 {
-    return backend->encrypt(inba, pwd);
+    return backend->encrypt(input, pwd, salt);
 }
 
 /*!
- * \brief decrypt data in \param inba until end \param pwd
+ * Decrypt \a input using \a pwd and \a salt.
+ * \param input encrypted data for decoding
+ * \param pwd secret passphrase used for encryption of \a input data
+ * \param salt must be the same as used for encryption of that particular data passed as \a input
  * \return decrypted data
- *      NOTE: inba don't need to contains wholed data that is
- *      encrypted to operate corectly it can be small chunk of
- *      i.e. whole file
+ * \sa MCrypto::encrypt
+ *
+ * NOTE: \a input doesn't need to contain whole data that is
+ *      encrypted to operate corectly - it can be small chunk of bigger
+ *      data sequence i.e. part of file
  */
-QByteArray MCrypto::decrypt(const QByteArray &inba, const QByteArray &pwd)
+QByteArray MCrypto::decrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt)
 {
-    return backend->decrypt(inba, pwd);
+    return backend->decrypt(input, pwd, salt);
 }
