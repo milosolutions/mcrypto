@@ -27,8 +27,8 @@ class ContextLocker {
 
 struct MCrypto::InternalData
 {
-    bool initEnc(const QByteArray &pwd);
-    bool initDec(const QByteArray &pwd);
+    bool initEnc(const QByteArray &pwd, const QByteArray &customSalt);
+    bool initDec(const QByteArray &pwd, const QByteArray &customSalt);
     EVP_CIPHER_CTX *e_ctx = nullptr;
     EVP_CIPHER_CTX *d_ctx = nullptr;
     QByteArray key;
@@ -39,10 +39,12 @@ struct MCrypto::InternalData
                 + QByteArray::number(0x11abc126)};
 };
 
-bool MCrypto::InternalData::initEnc(const QByteArray &pwd)
+bool MCrypto::InternalData::initEnc(const QByteArray &pwd, const QByteArray &customSalt)
 {
     key = QByteArray(EVP_MAX_KEY_LENGTH, 0);
     iv = QByteArray(EVP_MAX_IV_LENGTH, 0);
+    auto salt = reinterpret_cast<const unsigned char *>(
+                customSalt.isNull()? this->salt.constData() : customSalt.constData());
 
     OpenSSL_add_all_ciphers();
     OpenSSL_add_all_digests();
@@ -65,7 +67,7 @@ bool MCrypto::InternalData::initEnc(const QByteArray &pwd)
         return false;
     }
 
-    if(!EVP_BytesToKey(cipher, dgst, (const unsigned char *) salt.constData(),
+    if(!EVP_BytesToKey(cipher, dgst, salt,
                         (const unsigned char *) pwd.constData(), pwd.size(),
                         1, (unsigned char *)key.data(), (unsigned char *)iv.data()))
     {
@@ -86,10 +88,12 @@ bool MCrypto::InternalData::initEnc(const QByteArray &pwd)
     return true;
 }
 
-bool MCrypto::InternalData::initDec(const QByteArray &pwd)
+bool MCrypto::InternalData::initDec(const QByteArray &pwd, const QByteArray &customSalt)
 {
     key = QByteArray(EVP_MAX_KEY_LENGTH, 0);
     iv = QByteArray(EVP_MAX_IV_LENGTH, 0);
+    auto salt = reinterpret_cast<const unsigned char *>(
+                customSalt.isNull()? this->salt.constData() : customSalt.constData());
 
     OpenSSL_add_all_ciphers();
     OpenSSL_add_all_digests();
@@ -113,7 +117,7 @@ bool MCrypto::InternalData::initDec(const QByteArray &pwd)
         return false;
     }
 
-    if(!EVP_BytesToKey(decipher, dgst, (const unsigned char *) salt.constData(),
+    if(!EVP_BytesToKey(decipher, dgst, salt,
                         (const unsigned char *) pwd.constData(), pwd.size(),
                         1, (unsigned char *)key.data(), (unsigned char *)iv.data()))
     {
@@ -152,7 +156,7 @@ QByteArray MCrypto::Backend::encrypt(const QByteArray &input, const QByteArray &
 {
     QByteArray outbuf;
 
-    if (m->initEnc(pwd))
+    if (m->initEnc(pwd, salt))
     {
         ContextLocker locker(m->e_ctx);
         int inlen = 0, outlen = 0, len = 0;
@@ -186,7 +190,7 @@ QByteArray MCrypto::Backend::decrypt(const QByteArray &input, const QByteArray &
 {
     QByteArray outbuf;
 
-    if (m->initDec(pwd)) {
+    if (m->initDec(pwd, salt)) {
         ContextLocker locker(m->d_ctx);
         int inlen = 0, outlen = 0;
         inlen = input.size();
