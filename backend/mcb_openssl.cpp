@@ -123,8 +123,9 @@ bool MCB_OpenSsl::initEnc(const QByteArray &pwd)
     OpenSSL_add_all_ciphers();
     OpenSSL_add_all_digests();
 
-    // TODO: clean up old CTX if present!
-
+    if (e_ctx) { // Clean up old CTX if present
+        ContextLocker locker(e_ctx);
+    }
     e_ctx = EVP_CIPHER_CTX_new();
     EVP_CIPHER_CTX_init(e_ctx);
     ContextLocker locker(e_ctx);
@@ -177,8 +178,9 @@ bool MCB_OpenSsl::initDec(const QByteArray &pwd)
     OpenSSL_add_all_ciphers();
     OpenSSL_add_all_digests();
 
-    // TODO: clean up old CTX if present!
-
+    if (d_ctx) { // Clean up old CTX if present
+        ContextLocker locker(d_ctx);
+    }
     d_ctx = EVP_CIPHER_CTX_new();
     EVP_CIPHER_CTX_init(d_ctx);
 
