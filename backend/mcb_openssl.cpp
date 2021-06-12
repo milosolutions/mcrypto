@@ -3,6 +3,16 @@
 #include <QMetaEnum>
 #include <openssl/evp.h>
 
+inline unsigned char* writePtr(QByteArray& bytearray)
+{
+    return reinterpret_cast<unsigned char*>(bytearray.data());
+}
+
+inline const unsigned char* readPtr(const QByteArray& bytearray)
+{
+    return reinterpret_cast<const unsigned char*>(bytearray.constData());
+}
+
 // Automatically cleans up EVP_CIPHER_CTX when it goes out of scope.
 class ContextLocker {
  public:
@@ -67,9 +77,8 @@ bool MCrypto::InternalData::initEnc(const QByteArray &pwd, const QByteArray &cus
         return false;
     }
 
-    if(!EVP_BytesToKey(cipher, dgst, salt,
-                        (const unsigned char *) pwd.constData(), pwd.size(),
-                        1, (unsigned char *)key.data(), (unsigned char *)iv.data()))
+    if(!EVP_BytesToKey(cipher, dgst, salt, readPtr(pwd), pwd.size(),
+                       1, writePtr(key), writePtr(iv)))
     {
         return false;
     }
@@ -78,9 +87,7 @@ bool MCrypto::InternalData::initEnc(const QByteArray &pwd, const QByteArray &cus
         return false;
     }
 
-    if (!EVP_EncryptInit_ex(e_ctx, cipher, nullptr,
-                            (const unsigned char*)key.constData(),
-                            (const unsigned char*)iv.constData())) {
+    if (!EVP_EncryptInit_ex(e_ctx, cipher, nullptr,readPtr(key), readPtr(iv))) {
         return false;
     }
 
@@ -117,9 +124,8 @@ bool MCrypto::InternalData::initDec(const QByteArray &pwd, const QByteArray &cus
         return false;
     }
 
-    if(!EVP_BytesToKey(decipher, dgst, salt,
-                        (const unsigned char *) pwd.constData(), pwd.size(),
-                        1, (unsigned char *)key.data(), (unsigned char *)iv.data()))
+    if(!EVP_BytesToKey(decipher, dgst, salt, readPtr(pwd), pwd.size(),
+                        1, writePtr(key), writePtr(iv)))
     {
         return false;
     }
@@ -128,9 +134,7 @@ bool MCrypto::InternalData::initDec(const QByteArray &pwd, const QByteArray &cus
         return false;
     }
 
-    if (!EVP_DecryptInit_ex(d_ctx, decipher, nullptr,
-                            (const unsigned char*)key.constData(),
-                            (const unsigned char*)iv.constData())) {
+    if (!EVP_DecryptInit_ex(d_ctx, decipher, nullptr, readPtr(key), readPtr(iv))) {
         return false;
     }
 
@@ -164,15 +168,13 @@ QByteArray MCrypto::Backend::encrypt(const QByteArray &input, const QByteArray &
 
         outbuf = QByteArray(inlen + EVP_MAX_BLOCK_LENGTH, 0);
 
-        if (!EVP_EncryptUpdate(m->e_ctx, (unsigned char*)outbuf.data(), &len,
-                               (const unsigned char*)input.constData(), inlen)) {
+        if (!EVP_EncryptUpdate(m->e_ctx, writePtr(outbuf), &len, readPtr(input), inlen)) {
             return QByteArray();
         }
 
         outlen = len;
 
-        if (!EVP_EncryptFinal_ex(
-                m->e_ctx, ((unsigned char*)outbuf.data()) + len, &len)) {
+        if (!EVP_EncryptFinal_ex(m->e_ctx, (writePtr(outbuf)) + len, &len)) {
             return QByteArray();
         }
 
@@ -197,15 +199,13 @@ QByteArray MCrypto::Backend::decrypt(const QByteArray &input, const QByteArray &
 
         outbuf = QByteArray(inlen + EVP_MAX_BLOCK_LENGTH, 0);
 
-        if (!EVP_DecryptUpdate(m->d_ctx, (unsigned char*)outbuf.data(), &outlen,
-                               (const unsigned char*)input.constData(), inlen)) {
+        if (!EVP_DecryptUpdate(m->d_ctx, writePtr(outbuf), &outlen, readPtr(input), inlen)) {
             return QByteArray();
         }
 
         int tmplen = 0;
 
-        if (!EVP_DecryptFinal_ex(m->d_ctx,
-                                 ((unsigned char*)outbuf.data()) + outlen, &tmplen)) {
+        if (!EVP_DecryptFinal_ex(m->d_ctx, (writePtr(outbuf)) + outlen, &tmplen)) {
             qDebug() << "--- !EVP_EncryptFinal_ex";
             return QByteArray();
         }
