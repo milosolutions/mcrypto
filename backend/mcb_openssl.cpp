@@ -27,19 +27,19 @@ class ContextLocker {
     EVP_CIPHER_CTX *m_context = nullptr;
 };
 
-MCB_OpenSsl::MCB_OpenSsl(MCrypto::AES encryption, MCrypto::MODE mode)
+MCB_OpenSsl::MCB_OpenSsl(MCrypto::KEY_SIZE bits, MCrypto::MODE mode)
     : // Salt mustn't be saved as plain string!
       m_salt(QByteArray(MCrypto::staticMetaObject.className()
                         + QByteArray("12")
                         + QByteArray::number(0x11abc126)))
 {
-    m_algorithm = QByteArray(QMetaEnum::fromType<MCrypto::AES>()
-                                 .valueToKey(int(encryption))).replace('_', '-')
+    m_algorithm = QByteArray(QMetaEnum::fromType<MCrypto::KEY_SIZE>()
+                                 .valueToKey(int(bits))).replace('_', '-')
                   + QByteArray("-")
                   + QByteArray(QMetaEnum::fromType<MCrypto::MODE>().valueToKey(int(mode)));
 }
 
-QByteArray MCB_OpenSsl::encrypt(const QByteArray &inba, const QByteArray &pwd)
+QByteArray MCB_OpenSsl::encrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt)
 {
     QByteArray outbuf;
 
@@ -47,12 +47,12 @@ QByteArray MCB_OpenSsl::encrypt(const QByteArray &inba, const QByteArray &pwd)
     {
         ContextLocker locker(e_ctx);
         int inlen = 0, outlen = 0, len = 0;
-        inlen = inba.size();
+        inlen = input.size();
 
         outbuf = QByteArray(inlen + EVP_MAX_BLOCK_LENGTH, 0);
 
         if (!EVP_EncryptUpdate(e_ctx, (unsigned char*)outbuf.data(), &len,
-                               (const unsigned char*)inba.constData(), inlen)) {
+                               (const unsigned char*)input.constData(), inlen)) {
             return QByteArray();
         }
 
@@ -73,19 +73,19 @@ QByteArray MCB_OpenSsl::encrypt(const QByteArray &inba, const QByteArray &pwd)
     return outbuf;
 }
 
-QByteArray MCB_OpenSsl::decrypt(const QByteArray &inba, const QByteArray &pwd)
+QByteArray MCB_OpenSsl::decrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt)
 {
     QByteArray outbuf;
 
     if (initDec(pwd)) {
         ContextLocker locker(d_ctx);
         int inlen = 0, outlen = 0;
-        inlen = inba.size();
+        inlen = input.size();
 
         outbuf = QByteArray(inlen + EVP_MAX_BLOCK_LENGTH, 0);
 
         if (!EVP_DecryptUpdate(d_ctx, (unsigned char*)outbuf.data(), &outlen,
-                               (const unsigned char*)inba.constData(), inlen)) {
+                               (const unsigned char*)input.constData(), inlen)) {
             return QByteArray();
         }
 

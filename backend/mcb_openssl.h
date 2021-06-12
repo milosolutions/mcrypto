@@ -8,9 +8,9 @@ using EVP_CIPHER_CTX = evp_cipher_ctx_st;
 class MCB_OpenSsl : public MCrypto::Backend
 {
 public:
-    MCB_OpenSsl(MCrypto::AES encryption, MCrypto::MODE mode);
-    QByteArray encrypt(const QByteArray &inba, const QByteArray &pwd) final;
-    QByteArray decrypt(const QByteArray &inba, const QByteArray &pwd) final;
+    MCB_OpenSsl(MCrypto::KEY_SIZE bits, MCrypto::MODE mode);
+    QByteArray encrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt) final;
+    QByteArray decrypt(const QByteArray &inba, const QByteArray &pwd, const QByteArray &salt) final;
 private:
     bool initEnc(const QByteArray &pwd);
     bool initDec(const QByteArray &pwd);
