@@ -15,8 +15,9 @@ inline const unsigned char* readPtr(const QByteArray& bytearray)
 
 // Automatically cleans up EVP_CIPHER_CTX when it goes out of scope.
 class ContextLocker {
+    using CTXPTR = EVP_CIPHER_CTX*;
  public:
-    ContextLocker(EVP_CIPHER_CTX *context) : m_context(context) {}
+    ContextLocker(CTXPTR &context) : m_context(context) {}
     ~ContextLocker() {
         if (m_cleanup && m_context) {
             EVP_CIPHER_CTX_cleanup(m_context);
@@ -32,7 +33,7 @@ class ContextLocker {
 
  private:
     bool m_cleanup{true};
-    EVP_CIPHER_CTX *m_context{nullptr};
+    CTXPTR &m_context;
 };
 
 struct MCrypto::InternalData
