@@ -30,12 +30,12 @@ class MCrypto
 {
     Q_GADGET
  public:
-    enum KEY_SIZE {
-        KEY_128,
-        KEY_192,
-        KEY_256
+    enum AES_TYPE {
+        AES_128,
+        AES_192,
+        AES_256
     };
-    Q_ENUM(KEY_SIZE)
+    Q_ENUM(AES_TYPE)
 
     typedef enum MODE {
         ECB,
@@ -44,14 +44,14 @@ class MCrypto
     } MODE;
     Q_ENUM(MODE)
 
-    explicit MCrypto(KEY_SIZE encryption = KEY_256, MODE mode = CBC);
+    explicit MCrypto(AES_TYPE encryption = AES_256, MODE mode = CBC);
 
-    Q_INVOKABLE static QByteArray encrypt(KEY_SIZE bits,
+    Q_INVOKABLE static QByteArray encrypt(AES_TYPE bits,
                                           MODE mode,
                                           const QByteArray &input,
                                           const QByteArray &pwd,
                                           const QByteArray &salt = {});
-    Q_INVOKABLE static QByteArray decrypt(KEY_SIZE bits,
+    Q_INVOKABLE static QByteArray decrypt(AES_TYPE bits,
                                           MODE mode,
                                           const QByteArray &input,
                                           const QByteArray &pwd,
@@ -67,7 +67,7 @@ class MCrypto
     struct InternalData;
     class Backend {
     public:
-        Backend(MCrypto::KEY_SIZE bits, MCrypto::MODE mode);
+        Backend(MCrypto::AES_TYPE bits, MCrypto::MODE mode);
         ~Backend();
         QByteArray encrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt);
         QByteArray decrypt(const QByteArray &input, const QByteArray &pwd, const QByteArray &salt);

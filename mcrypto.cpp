@@ -46,7 +46,7 @@ SOFTWARE.
  *  that's why it will generate deprecated functions warnings.
  *  To bypass this link statically to OpenSSL.
  */
-MCrypto::MCrypto(KEY_SIZE bits, MODE mode) : backend(bits, mode)
+MCrypto::MCrypto(AES_TYPE bits, MODE mode) : backend(bits, mode)
 {
     // Nothing
 }
@@ -56,7 +56,7 @@ MCrypto::MCrypto(KEY_SIZE bits, MODE mode) : backend(bits, mode)
  * \sa MCrypto::MCrypto
  * \sa MCrypto::encrypt
  */
-QByteArray MCrypto::encrypt(const MCrypto::KEY_SIZE bits, const MCrypto::MODE mode,
+QByteArray MCrypto::encrypt(const MCrypto::AES_TYPE bits, const MCrypto::MODE mode,
                             const QByteArray &input, const QByteArray &pwd,
                             const QByteArray &salt)
 {
@@ -68,7 +68,7 @@ QByteArray MCrypto::encrypt(const MCrypto::KEY_SIZE bits, const MCrypto::MODE mo
  * \sa MCrypto::MCrypto
  * \sa MCrypto::decrypt
  */
-QByteArray MCrypto::decrypt(const KEY_SIZE bits, const MCrypto::MODE mode,
+QByteArray MCrypto::decrypt(const AES_TYPE bits, const MCrypto::MODE mode,
                             const QByteArray &input, const QByteArray &pwd,
                             const QByteArray &salt)
 {
