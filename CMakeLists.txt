@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 
 project(mcrypto
   VERSION 0.0.1
@@ -8,7 +8,7 @@ project(mcrypto
 
 message("MCrypto: cmake support for MCrypto is incomplete! Please fix Android etc.!")
 
-find_package(Qt5 COMPONENTS REQUIRED Core)
+find_package(Qt6 COMPONENTS REQUIRED Core)
 find_package(OpenSSL)
 
 set(CMAKE_AUTOMOC ON)
@@ -26,7 +26,7 @@ else()
 endif ()
 
 add_library(mcrypto STATIC ${SOURCES})
-target_link_libraries(mcrypto PUBLIC Qt5::Core)
+target_link_libraries(mcrypto PUBLIC Qt6::Core)
 
 if (OPENSSL_FOUND AND NOT mcrypto-nossl)
   message("MCrypto: using OpenSSL ${OPENSSL_VERSION}")
@@ -46,4 +46,4 @@ target_include_directories(mcrypto
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 
-add_subdirectory(tst_mcrypto)
+#add_subdirectory(tst_mcrypto)
