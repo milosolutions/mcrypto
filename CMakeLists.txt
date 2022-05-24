@@ -7,6 +7,9 @@ project(mcrypto
 )
 
 find_package(Qt6 COMPONENTS REQUIRED Core)
+if (NOT Qt6_FOUND)
+    find_package(Qt5 5.15 REQUIRED COMPONENTS Core)
+
 set(CMAKE_AUTOMOC ON)
 
 option(mcrypto-nossl "MCrypto: Manual switch for disabling OpenSSL library" OFF)
@@ -33,7 +36,7 @@ else()
 endif ()
 
 add_library(mcrypto STATIC ${SOURCES})
-target_link_libraries(mcrypto PUBLIC Qt6::Core)
+target_link_libraries(mcrypto PUBLIC Qt::Core)
 
 if (OPENSSL_FOUND AND NOT mcrypto-nossl)
   message("MCrypto: using OpenSSL ${OPENSSL_VERSION}")
@@ -53,4 +56,5 @@ target_include_directories(mcrypto
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 
+# TODO test are temporarily disabled
 #add_subdirectory(tst_mcrypto)
