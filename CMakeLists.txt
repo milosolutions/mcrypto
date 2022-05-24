@@ -6,17 +6,24 @@ project(mcrypto
   LANGUAGES CXX
 )
 
-message("MCrypto: cmake support for MCrypto is incomplete! Please fix Android etc.!")
-
 find_package(Qt6 COMPONENTS REQUIRED Core)
-find_package(OpenSSL)
-
 set(CMAKE_AUTOMOC ON)
+
 option(mcrypto-nossl "MCrypto: Manual switch for disabling OpenSSL library" OFF)
 
 if (mcrypto-nossl)
     message("MCrypto: OpenSSL is manually disabled.")
+else()
+  if (ANDROID)
+    # For Android we need to help find OpenSSL
+    # To run code below prepare:
+    # * location of OpenSSL header
+    # * proper libraries (get prebuilt libs from https://github.com/KDAB/android_openssl.git)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/FindOpenSSLHelper.cmake)
+  endif()
 endif()
+find_package(OpenSSL)
+
 
 set(SOURCES mcrypto.h mcrypto.cpp)
 if (OPENSSL_FOUND AND NOT mcrypto-nossl)
