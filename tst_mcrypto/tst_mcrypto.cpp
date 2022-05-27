@@ -29,54 +29,48 @@ SOFTWARE.
 class TestMCrypto : public QObject
 {
    Q_OBJECT
-
 private slots:
-    void initTestCase();
-    void cleanupTestCase();
-
-    void testEncrypted();
-    void testEncryptedStatic();
+    void test_encryption_decryption();
+    void test_custom_salt();
 };
 
-void TestMCrypto::initTestCase()
-{
-    QCoreApplication::setApplicationName("MCrypto Test");
-    QCoreApplication::setOrganizationName("Milo");
-}
-
-void TestMCrypto::cleanupTestCase()
-{
-}
-
-void TestMCrypto::testEncrypted()
-{
-    qDebug() << "TEST DISABLED BECAUSE NON-STATIC FUNCTIONS SOMEHOW ARE FAILING!";
-//    const QByteArray pass(TestMCrypto::metaObject()->className());
-//    const QByteArray data("The Advanced Encryption Standard (AES).");
-
-//    MCrypto crypt(MCrypto::AES_256, MCrypto::CBC);
-//    const QByteArray encryptedData = crypt.encrypt(data, pass);
-
-//    MCrypto crypt2(MCrypto::AES_256, MCrypto::CBC);
-//    const QByteArray decryptedData = crypt2.decrypt(encryptedData, pass);
-
-//    QCOMPARE(data, decryptedData);
-}
-
-void TestMCrypto::testEncryptedStatic()
+void TestMCrypto::test_encryption_decryption()
 {
     const QByteArray pass(TestMCrypto::metaObject()->className());
     const QByteArray data("The Advanced Encryption Standard (AES).");
 
-    const QByteArray encryptedData = MCrypto::encrypt(MCrypto::KEY_256,
+    const QByteArray encryptedData = MCrypto::encrypt(MCrypto::AES_256,
                                                       MCrypto::CBC,
                                                       data, pass);
-    const QByteArray decryptedData = MCrypto::decrypt(MCrypto::KEY_256,
+    const QByteArray decryptedData = MCrypto::decrypt(MCrypto::AES_256,
                                                       MCrypto::CBC,
                                                       encryptedData, pass);
 
     QCOMPARE(data, decryptedData);
 }
+
+void TestMCrypto::test_custom_salt()
+{
+    // Having 2 objects crypt1 and crypt2 simulate
+    // passing message between two separate parties
+    // encryption algorithm details must be well established
+    // pass (user provided) and salt (machine provided) must be shared
+    const QByteArray msg("Secret message to be encrypted.");
+    const QByteArray pass(TestMCrypto::metaObject()->className());
+    const QByteArray salt(TestMCrypto::metaObject()->className());
+
+    // Sender
+    MCrypto crypt1(MCrypto::AES_256, MCrypto::CBC);
+    const QByteArray encryptedData = crypt1.encrypt(msg, pass, salt);
+    // encrypted data will be delivered to receiver
+
+    // Receiver
+    MCrypto crypt2(MCrypto::AES_256, MCrypto::CBC);
+    const QByteArray decryptedData = crypt2.decrypt(encryptedData, pass, salt);
+
+    QCOMPARE(msg, decryptedData);
+}
+
 
 QTEST_MAIN(TestMCrypto)
 

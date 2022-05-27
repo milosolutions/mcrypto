@@ -56,5 +56,5 @@ target_include_directories(mcrypto
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 
-# TODO test are temporarily disabled
-#add_subdirectory(tst_mcrypto)
+#Unit test
+add_subdirectory(tst_mcrypto)
