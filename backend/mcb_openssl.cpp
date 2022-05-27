@@ -143,10 +143,10 @@ bool MCrypto::InternalData::initDec(const QByteArray &pwd, const QByteArray &cus
     return true;
 }
 
-MCrypto::Backend::Backend(MCrypto::KEY_SIZE bits, MCrypto::MODE mode)
+MCrypto::Backend::Backend(MCrypto::AES_TYPE bits, MCrypto::MODE mode)
 {
     m = new InternalData;
-    m->algorithm = QByteArray(QMetaEnum::fromType<MCrypto::KEY_SIZE>()
+    m->algorithm = QByteArray(QMetaEnum::fromType<MCrypto::AES_TYPE>()
                                  .valueToKey(int(bits))).replace('_', '-')
                   + QByteArray("-")
                   + QByteArray(QMetaEnum::fromType<MCrypto::MODE>().valueToKey(int(mode)));

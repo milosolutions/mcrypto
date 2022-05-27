@@ -9,7 +9,7 @@ project(mcrypto
 find_package(Qt6 COMPONENTS REQUIRED Core)
 if (NOT Qt6_FOUND)
     find_package(Qt5 5.15 REQUIRED COMPONENTS Core)
-
+endif()
 set(CMAKE_AUTOMOC ON)
 
 option(mcrypto-nossl "MCrypto: Manual switch for disabling OpenSSL library" OFF)
